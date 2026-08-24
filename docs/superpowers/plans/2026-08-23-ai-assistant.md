@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- No git commits: the repo has zero commits and the user has not requested any. Skip commit steps.
+- Git: work happens on branch `feature/ai-assistant` (baseline commit `d726763` on main); one commit per task with a clear subject (required by the subagent-driven execution the user selected). NEVER push — no remote exists.
 - No comments in new code unless explaining a non-obvious "why" (repo style: sparse comments).
 - `declare(strict_types=1)` in every new PHP file; `final class` for services; static methods (repo convention).
 - Bind booleans to PG as `1`/`0`, never PHP `true`/`false` (PDO native prepares send `false` as `""` → error 22P02).
@@ -1980,9 +1980,8 @@ Expected: start → `{"ok":true,…}`; status transitions `loading` → `ready` 
 **Interfaces:** none new; must not break existing installs (llama.cpp is optional for core app — the assistant degrades gracefully without it).
 
 - [ ] **Step 1: Installer changes** — in `install/install.sh`:
-  1. After `ensure_formula composer composer`, add:
+  1. The llama.cpp formula line was already added in Task 2 — verify it exists after `ensure_formula composer composer` (add it only if missing, e.g. in a re-run scenario):
   ```bash
-  # Optional: local LLM backend for the AI Assistant (degrades gracefully if absent)
   ensure_formula llama.cpp llama-server
   ```
   2. In the storage loop `for d in uploads sessions backups logs reports labels; do`, change to:
