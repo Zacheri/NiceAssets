@@ -63,6 +63,7 @@ ensure_formula nginx nginx
 ensure_formula postgresql psql
 ensure_formula php php
 ensure_formula composer composer
+ensure_formula llama.cpp llama-server
 
 command -v php >/dev/null 2>&1 || die "php not found on PATH"
 say "PHP: $(php -v | head -1)"
