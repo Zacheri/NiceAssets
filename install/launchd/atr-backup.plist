@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.atr.backup</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PHP__</string>
+        <string>__ROOT__/bin/backup.php</string>
+        <string>daily</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__ROOT__</string>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>__PREFIX__/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>__ROOT__/storage/logs/backup.log</string>
+    <key>StandardErrorPath</key>
+    <string>__ROOT__/storage/logs/backup.log</string>
+</dict>
+</plist>

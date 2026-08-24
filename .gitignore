@@ -1,0 +1,16 @@
+/vendor/
+/node_modules/
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+/storage/sessions/*
+/storage/backups/*
+/storage/logs/*
+/storage/reports/*
+/storage/labels/*
+/config/app.local.php
+.DS_Store
+*.log
+/storage/models/*
+!/storage/models/.gitkeep
+/storage/run/*
+!/storage/run/.gitkeep
