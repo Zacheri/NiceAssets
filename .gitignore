@@ -14,3 +14,4 @@
 !/storage/models/.gitkeep
 /storage/run/*
 !/storage/run/.gitkeep
+/.superpowers/
