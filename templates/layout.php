@@ -56,6 +56,9 @@ window.ATR = {
       <a href="<?= e(url('/reports')) ?>" class="<?= str_starts_with($nav_active, 'reports') ? 'active' : '' ?>">
         <?= $icon('<path d="M5 20V12M11 20V5M17 20v-6M3 20h18"/>') ?> Reports
       </a>
+      <a href="<?= e(url('/assistant')) ?>" class="<?= str_starts_with($nav_active, 'assistant') ? 'active' : '' ?>">
+        <?= $icon('<path d="M12 3a7 7 0 0 0-7 7c0 2.4 1.2 4.4 3 5.7V18a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3c1.8-1.3 3-3.3 3-5.7a7 7 0 0 0-7-7z"/><path d="M9.5 10.5h.01M14.5 10.5h.01M9 13.5c.9.8 5.1.8 6 0"/>') ?> Assistant
+      </a>
       <?php if (($user['role_name'] ?? '') === 'admin'): ?>
         <div class="nav-section">Admin</div>
         <a href="<?= e(url('/admin/users')) ?>" class="<?= $nav_active === 'admin/users' ? 'active' : '' ?>">
