@@ -381,7 +381,7 @@ final class Tools
                     Asset::setDepartment((int) $a['id'], $deptId, $user);
                 }
                 $items[] = ['tag' => $a['asset_tag'], 'ok' => 1, 'reason' => 'checked in' . ($deptId !== null ? ' → ' . $deptName : '')];
-            } catch (RuntimeException $e) {
+            } catch (\Throwable $e) {
                 $items[] = ['tag' => $a['asset_tag'], 'ok' => 0, 'reason' => $e->getMessage()];
             }
         }
@@ -427,7 +427,16 @@ final class Tools
             'due_date' => (string) ($args['due_date'] ?? ''),
         ];
         if (!$executeMode) {
-            return ['preview' => 'Check out ' . $a['asset_tag'] . ' to ' . $who . '.', 'op' => 'check_out_asset', 'args' => $extra];
+            return [
+                'preview' => 'Check out ' . $a['asset_tag'] . ' to ' . $who . '.',
+                'op' => 'check_out_asset',
+                'args' => [
+                    'asset_id' => $assetId,
+                    'person_id' => $personId,
+                    'department_id' => $deptId,
+                    'due_date' => (string) ($args['due_date'] ?? ''),
+                ],
+            ];
         }
         try {
             Asset::setStatus($assetId, 'checked_out', $extra, $user);
@@ -508,12 +517,22 @@ final class Tools
             'notes' => (string) ($args['notes'] ?? ''),
             'is_terminated' => !empty($args['is_terminated']),
         ];
+        if (!empty($clean['department_id'])) {
+            $dept = Database::fetchColumn('SELECT name FROM departments WHERE id = :id', ['id' => (int) $clean['department_id']]);
+            if ($dept === false || $dept === null) {
+                return ['error' => 'Department not found (id ' . $clean['department_id'] . '). Use department_list to see valid departments.'];
+            }
+        }
+        $existing = Database::fetchColumn('SELECT id FROM persons WHERE full_name = :n', ['n' => $name]);
+        if ($existing !== false && $existing !== null) {
+            return ['error' => 'A person named "' . $name . '" already exists.'];
+        }
         if (!$executeMode) {
             return ['preview' => 'Create person "' . $name . '" (' . ($clean['job_title'] !== '' ? $clean['job_title'] : 'no title') . ').', 'op' => 'create_person', 'args' => $clean];
         }
         try {
             $id = Person::create($clean);
-        } catch (RuntimeException $e) {
+        } catch (\Throwable $e) {
             return ['error' => $e->getMessage()];
         }
         return ['ok' => true, 'id' => $id, 'message' => $name . ' created.'];
@@ -544,6 +563,16 @@ final class Tools
         if (trim($clean['full_name']) === '') {
             return ['error' => 'full_name cannot be empty.'];
         }
+        if ($clean['department_id'] !== null) {
+            $dept = Database::fetchColumn('SELECT name FROM departments WHERE id = :id', ['id' => (int) $clean['department_id']]);
+            if ($dept === false || $dept === null) {
+                return ['error' => 'Department not found (id ' . $clean['department_id'] . '). Use department_list to see valid departments.'];
+            }
+        }
+        $existing = Database::fetchColumn('SELECT id FROM persons WHERE full_name = :n AND id <> :id', ['n' => $clean['full_name'], 'id' => $id]);
+        if ($existing !== false && $existing !== null) {
+            return ['error' => 'Another person is already named "' . $clean['full_name'] . '".'];
+        }
         if (!$executeMode) {
             $changed = [];
             foreach (['full_name', 'job_title', 'personal_email', 'work_email', 'phone', 'address', 'notes', 'is_terminated'] as $f) {
@@ -558,7 +587,7 @@ final class Tools
         }
         try {
             Person::update($id, $clean);
-        } catch (RuntimeException $e) {
+        } catch (\Throwable $e) {
             return ['error' => $e->getMessage()];
         }
         return ['ok' => true, 'message' => $p['full_name'] . ' updated.'];
