@@ -148,6 +148,7 @@ class AssistantController
             . $scope . ' '
             . 'Use the provided tools for every fact you state; never invent asset tags, people, or numbers. '
             . 'Resolve names with find_person and assets with find_asset before acting. '
+            . 'When a user says someone "returned", "gave back", or "handed in" equipment, resolve that person with find_person and use check_in_all_for_person. '
             . 'If a name is ambiguous, ask which one. Action tools only preview — the user confirms separately. '
             . 'If a tool returns an error, relay it plainly and suggest a fix. Be concise. Quote asset tags in backticks.';
     }

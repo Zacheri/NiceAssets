@@ -61,7 +61,15 @@ final class LlmServer
     public static function binary(): ?string
     {
         $out = trim((string) shell_exec('command -v llama-server 2>/dev/null'));
-        return $out !== '' ? $out : null;
+        if ($out !== '') {
+            return $out;
+        }
+        foreach (['/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'] as $candidate) {
+            if (is_file($candidate) && is_executable($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
     }
 
     private static function pidFile(): string
