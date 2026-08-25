@@ -56,6 +56,14 @@ return [
     // Preferences
     ['method' => 'POST', 'path' => '/prefs',                  'controller' => 'Pref',   'action' => 'store'],
 
+    // AI Assistant
+    ['method' => 'GET',  'path' => '/assistant',           'controller' => 'Assistant', 'action' => 'index'],
+    ['method' => 'GET',  'path' => '/assistant/state',     'controller' => 'Assistant', 'action' => 'state'],
+    ['method' => 'POST', 'path' => '/assistant/chat',      'controller' => 'Assistant', 'action' => 'chat'],
+    ['method' => 'POST', 'path' => '/assistant/confirm',   'controller' => 'Assistant', 'action' => 'confirm'],
+    ['method' => 'POST', 'path' => '/assistant/cancel',    'controller' => 'Assistant', 'action' => 'cancel'],
+    ['method' => 'POST', 'path' => '/assistant/clear',     'controller' => 'Assistant', 'action' => 'clear'],
+
     // Admin
     ['method' => 'GET',  'path' => '/admin',                     'controller' => 'Admin', 'action' => 'index',       'roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/users',               'controller' => 'Admin', 'action' => 'users',         'roles' => ['admin']],
@@ -90,4 +98,10 @@ return [
     ['method' => 'POST', 'path' => '/admin/backups/{id}/restore','controller' => 'Admin', 'action' => 'backupRestore', 'roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/backups/{id}/download','controller' => 'Admin', 'action' => 'backupDownload','roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/system',              'controller' => 'Admin', 'action' => 'system',        'roles' => ['admin']],
+    ['method' => 'GET',  'path' => '/admin/llm/state',     'controller' => 'Admin', 'action' => 'llmState',   'roles' => ['admin']],
+    ['method' => 'POST', 'path' => '/admin/llm/select',    'controller' => 'Admin', 'action' => 'llmSelect',  'roles' => ['admin']],
+    ['method' => 'POST', 'path' => '/admin/llm/start',     'controller' => 'Admin', 'action' => 'llmStart',   'roles' => ['admin']],
+    ['method' => 'POST', 'path' => '/admin/llm/stop',      'controller' => 'Admin', 'action' => 'llmStop',    'roles' => ['admin']],
+    ['method' => 'POST', 'path' => '/admin/llm/config',    'controller' => 'Admin', 'action' => 'llmConfig',  'roles' => ['admin']],
+    ['method' => 'POST', 'path' => '/admin/llm/install',   'controller' => 'Admin', 'action' => 'llmInstall', 'roles' => ['admin']],
 ];
