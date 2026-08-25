@@ -487,6 +487,28 @@ final class Asset
         });
     }
 
+    public static function setDepartment(int $id, ?int $departmentId, ?array $user): void
+    {
+        $asset = self::find($id, $user);
+        if ($asset === null) {
+            throw new RuntimeException('Asset not found.');
+        }
+        if ($departmentId !== null) {
+            $dept = Database::fetchColumn('SELECT name FROM departments WHERE id = :id', ['id' => $departmentId]);
+            if ($dept === false || $dept === null) {
+                throw new RuntimeException('Department not found.');
+            }
+        }
+        Database::execute(
+            'UPDATE assets SET department_id = :d, updated_at = now() WHERE id = :id',
+            ['d' => $departmentId, 'id' => $id]
+        );
+        Audit::log('asset.department_change', 'asset', (string) $id, [
+            'asset_tag' => $asset['asset_tag'],
+            'department_id' => $departmentId,
+        ]);
+    }
+
     public static function delete(int $id, ?array $user): void
     {
         $asset = Database::fetchOne('SELECT * FROM assets WHERE id = :id', ['id' => $id]);
