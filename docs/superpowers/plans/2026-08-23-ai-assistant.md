@@ -1434,7 +1434,7 @@ B=http://127.0.0.1:8081; J=/tmp/j_ai.txt
 T=$(curl -s -b $J -c $J $B/assistant | grep -o 'name="_token" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
 curl -s -b $J -c $J --max-time 180 --data-urlencode "_token=$T" --data-urlencode "message=What is asset 00001? Status and holder please." $B/assistant/chat
 ```
-Expected: JSON `text` mentions `00001` and `available`; `plan` null; `trace` contains `find_asset`. (First call may take 10–30 s while the model loads.)
+Expected: JSON `text` mentions `00001` and states its REAL current status (verify against `psql … -tAc "SELECT status FROM assets WHERE asset_tag='00001'"` — the user may have it checked out; the assistant must report the truth); `plan` null; `trace` contains `find_asset`. (First call may take 10–30 s while the model loads.)
 
 - [ ] **Step 5: Verify the plan/confirm cycle (model required; fixture cleaned after)**
 
@@ -1449,7 +1449,7 @@ SQL
 B=http://127.0.0.1:8081; J=/tmp/j_ai.txt
 T=$(curl -s -b $J -c $J $B/assistant | grep -o 'name="_token" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
 curl -s -b $J -c $J --max-time 180 --data-urlencode "_token=$T" \
-  --data-urlencode "message=tessa quickreturn returned all her equipment" $B/assistant/chat
+  --data-urlencode "message=Please check in every asset that is currently checked out to Tessa Quickreturn." $B/assistant/chat
 ```
 Expected: JSON `plan` with one op `check_in_all_for_person` whose `preview` mentions `ZZ-9101`; `text` summarizes it. Nothing executed yet — verify: `psql … -tAc "SELECT status FROM assets WHERE asset_tag='ZZ-9101'"` → `checked_out`.
 
@@ -2167,7 +2167,7 @@ Run:
 export PGPASSWORD=testpass123
 psql -h 127.0.0.1 -U atr -d atr -tAc "SELECT asset_tag,status FROM assets ORDER BY asset_tag; SELECT count(*) FROM persons; SELECT count(*) FROM photos"
 ```
-Expected: exactly the user's asset `00001` with status `available`; persons count reflects only real user data (0 after all sweep fixtures cleaned — verify no `AI Sweep Person`/`Smoke Person`/fixture rows remain); photos count unchanged from before this work. No leftover `ZZ-*`, `AIQ-*`, or test rows.
+Expected: the user's asset `00001` is present (status = whatever the user's real checkout state is — do NOT assert a specific status and never modify it); persons count reflects only real user data (no `AI Sweep Person`/`Smoke Person`/`Tessa Quickreturn`/`Christopher Baldolvsky`/`Fix Person One` rows remain); photos count unchanged from before this work. No leftover `ZZ-*`, `AIQ-*`, or other fixture rows.
 
 - [ ] **Step 5: Final lint across all new/changed PHP**
 
