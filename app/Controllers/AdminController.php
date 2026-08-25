@@ -18,6 +18,7 @@ use App\Models\Setting;
 use App\Models\Site;
 use App\Models\User;
 use App\Services\Backup;
+use App\Services\LlmServer;
 use RuntimeException;
 
 class AdminController
@@ -346,7 +347,75 @@ class AdminController
                 'backups' => $this->dirSize(Config::get('storage.backups')),
                 'reports' => $this->dirSize(Config::get('storage.reports')),
             ],
+            'llm' => [
+                'state' => LlmServer::state(),
+                'port' => LlmServer::port(),
+                'context' => LlmServer::context(),
+                'models_dir' => LlmServer::modelsDir(),
+            ],
         ]));
+    }
+
+    public function llmState(): void
+    {
+        Auth::requireLogin();
+        Response::json(LlmServer::state());
+    }
+
+    public function llmSelect(): void
+    {
+        Auth::requireLogin();
+        $file = basename((string) Request::post('model', ''));
+        if ($file === '' || !is_file(LlmServer::modelsDir() . '/' . $file)) {
+            Response::json(['error' => 'Model file not found.'], 400);
+        }
+        LlmServer::setSelectedModel($file);
+        Response::json(['ok' => true]);
+    }
+
+    public function llmStart(): void
+    {
+        Auth::requireLogin();
+        try {
+            LlmServer::start();
+        } catch (RuntimeException $e) {
+            Response::json(['error' => $e->getMessage()], 500);
+        }
+        Response::json(['ok' => true, 'note' => 'Model is loading. Replies may be slower until it is ready.']);
+    }
+
+    public function llmStop(): void
+    {
+        Auth::requireLogin();
+        LlmServer::stop();
+        Response::json(['ok' => true]);
+    }
+
+    public function llmConfig(): void
+    {
+        Auth::requireLogin();
+        $port = (int) Request::post('port', 0);
+        $context = (int) Request::post('context', 0);
+        if ($port < 1024 || $port > 65535) {
+            Response::json(['error' => 'Port must be between 1024 and 65535.'], 400);
+        }
+        if ($context < 2048 || $context > 32768) {
+            Response::json(['error' => 'Context must be between 2048 and 32768.'], 400);
+        }
+        Setting::set('llm.port', (string) $port);
+        Setting::set('llm.context', (string) $context);
+        LlmServer::stop();
+        Response::json(['ok' => true, 'note' => 'Saved. The model server restarts with the new settings on next use.']);
+    }
+
+    public function llmInstall(): void
+    {
+        Auth::requireLogin();
+        $res = LlmServer::install();
+        if (!$res['ok']) {
+            Response::json(['error' => 'llama.cpp install failed. Try: brew install llama.cpp', 'output' => substr((string) $res['output'], 0, 2000)], 500);
+        }
+        Response::json(['ok' => true, 'message' => 'llama.cpp installed.', 'output' => substr((string) $res['output'], 0, 2000)]);
     }
 
     private function dirSize(string $dir): string
