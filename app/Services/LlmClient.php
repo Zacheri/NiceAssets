@@ -76,7 +76,6 @@ final class LlmClient
         $raw = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $err = curl_error($ch);
-        curl_close($ch);
         if ($raw === false) {
             Logger::error('llama-server unreachable', ['error' => $err]);
             throw new RuntimeException('Cannot reach the local model server. Start it from the System tab.');
