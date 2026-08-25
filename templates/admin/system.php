@@ -131,18 +131,17 @@
       btn.disabled = true;
       say('Working…');
       if (btn.id === 'llm-select') {
-        post('/admin/llm/select', { model: $('llm-model').value }, function (r) { say(r.json && r.json.error ? r.json.error : 'Model selected.', !r.ok); refresh(); });
+        post('/admin/llm/select', { model: $('llm-model').value }, function (r) { btn.disabled = false; say(r.json && r.json.error ? r.json.error : 'Model selected.', !r.ok); refresh(); });
       } else if (btn.id === 'llm-config') {
-        post('/admin/llm/config', { port: $('llm-port').value, context: $('llm-context-input').value }, function (r) { say(r.json && (r.json.error || r.json.note), !r.ok); });
+        post('/admin/llm/config', { port: $('llm-port').value, context: $('llm-context-input').value }, function (r) { btn.disabled = false; say(r.json && (r.json.error || r.json.note), !r.ok); });
       } else if (btn.id === 'llm-start') {
-        post('/admin/llm/start', {}, function (r) { say(r.json && (r.json.error || r.json.note), !r.ok); refresh(); });
+        post('/admin/llm/start', {}, function (r) { btn.disabled = false; say(r.json && (r.json.error || r.json.note), !r.ok); refresh(); });
       } else if (btn.id === 'llm-stop') {
-        post('/admin/llm/stop', {}, function (r) { say(r.json && r.json.error ? r.json.error : 'Stopped.', !r.ok); refresh(); });
+        post('/admin/llm/stop', {}, function (r) { btn.disabled = false; say(r.json && r.json.error ? r.json.error : 'Stopped.', !r.ok); refresh(); });
       } else if (btn.id === 'llm-install') {
         say('Installing llama.cpp via brew — this can take a few minutes…');
-        post('/admin/llm/install', {}, function (r) { say(r.json && (r.json.message || r.json.error), !r.ok); refresh(); });
+        post('/admin/llm/install', {}, function (r) { btn.disabled = false; say(r.json && (r.json.message || r.json.error), !r.ok); refresh(); });
       }
-      btn.disabled = false;
     });
   });
   refresh();
