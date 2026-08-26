@@ -97,6 +97,15 @@
   function renderResultRows(results) {
     results.forEach(function (r) {
       var res = r.result || {};
+      if (Object.prototype.toString.call(res.items) === '[object Array]') {
+        res.items.forEach(function (it) {
+          pushBubble('assistant', (it.ok === 1 ? '✓ ' : '✗ ') + esc(it.tag) + ' — ' + esc(it.reason));
+        });
+        if (res.ok !== true) {
+          pushBubble('assistant', '⚠ ' + (res.checked_in || 0) + ' of ' + (res.total || 0) + ' succeeded.');
+        }
+        return;
+      }
       var err = res.error;
       var msg = err ? String(err) : String(res.message || res.note || 'Done.');
       pushBubble('assistant', (err ? '✗ ' : '✓ ') + esc(msg));
@@ -156,6 +165,7 @@
         return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, json: j }; });
       })
       .then(function (res) {
+        messagesEl.querySelectorAll('.assistant-plan').forEach(function (c) { c.remove(); });
         if (!res.ok || !res.json || res.json.error) {
           typing.innerHTML = '⚠ ' + esc((res.json && res.json.error) || 'Request failed.');
           setBusy(false);
@@ -167,6 +177,7 @@
         inputEl.focus();
       })
       .catch(function () {
+        messagesEl.querySelectorAll('.assistant-plan').forEach(function (c) { c.remove(); });
         typing.innerHTML = '⚠ Network error — could not reach the assistant.';
         setBusy(false);
       });

@@ -48,7 +48,7 @@ final class LlmClient
                     if (!is_array($result)) {
                         $result = ['message' => (string) $result];
                     }
-                } catch (RuntimeException $e) {
+                } catch (\Throwable $e) {
                     $result = ['error' => $e->getMessage()];
                 }
                 $trace[] = ['tool' => $name, 'args' => $args, 'result' => $result];

@@ -131,3 +131,12 @@ There is no automated test suite. Verification:
   (opt-in: installer prompt or `ATR_SEED=1`) exercises every status, an open work
   order, warranty alert tiers, low stock, multi-assignment, full depreciation,
   and a previous Mon–Fri audit trail — for evaluation only.
+
+## AI Assistant (local LLM)
+
+- `app/Services/LlmServer.php` — app-managed `llama-server` on 127.0.0.1 (port from `llm.port`, default 8082). Models = `.gguf` files in `storage/models` (override `llm.models_dir`); selection = `llm.selected_model`. PID in `storage/run/llama.pid`, log in `storage/logs/llama.log`. Never reachable from outside localhost.
+- `app/Services/LlmClient.php` — OpenAI-compatible `/v1/chat/completions` loop (tools, ≤8 rounds, 120 s budget) → `{text, trace}`.
+- `app/Services/Assistant/Tools.php` — the ONLY path from the model to the DB. Asset reads are department-scoped via `Auth::scopeWhere`; person name lookups strip PII (email/phone) for non-admins; `person_detail` is admin-only (mirrors the UI). Action tools run in two modes: dry-run (returns `{preview, op, args}`) and execute (calls the normal model layer). RBAC is enforced per-tool with `requireRole()` — never trust the model.
+- `app/Controllers/AssistantController.php` — `/assistant*` routes. Session: `llm_history` (last 12 messages) and `assistant_plan` (pending ops). Audit: `assistant.query` (every prompt) and `assistant.execute` (every confirm).
+- Two-phase safety: a model can only *propose*; the UI renders a confirm card; `POST /assistant/confirm` executes the stored plan through `Tools::execute(..., executeMode: true)` and audits each result.
+- Settings keys (all in `settings`, no migrations): `llm.models_dir`, `llm.port`, `llm.context`, `llm.selected_model`. Admin card: Admin → System → "AI Assistant".

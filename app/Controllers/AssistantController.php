@@ -107,7 +107,7 @@ class AssistantController
         foreach ($plan as $op) {
             try {
                 $r = Tools::execute((string) $op['tool'], (array) $op['args'], $user, true);
-            } catch (RuntimeException $e) {
+            } catch (\Throwable $e) {
                 $r = ['error' => $e->getMessage()];
             }
             if (!is_array($r)) {

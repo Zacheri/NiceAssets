@@ -96,14 +96,14 @@ final class Tools
     public static function execute(string $name, array $args, array $user, bool $executeMode): array
     {
         return match ($name) {
-            'find_person' => self::findPerson((string) ($args['query'] ?? '')),
-            'find_asset' => self::findAsset((string) ($args['query'] ?? '')),
-            'list_persons' => self::listPersons(!empty($args['terminated'])),
+            'find_person' => self::findPerson((string) ($args['query'] ?? ''), $user),
+            'find_asset' => self::findAsset((string) ($args['query'] ?? ''), $user),
+            'list_persons' => self::listPersons(!empty($args['terminated']), $user),
             'list_assets' => self::listAssets($args),
-            'person_detail' => self::personDetail((int) ($args['id'] ?? 0)),
+            'person_detail' => self::personDetail((int) ($args['id'] ?? 0), $user),
             'asset_detail' => self::assetDetail((int) ($args['id'] ?? 0), $user),
             'department_list' => self::departmentList(),
-            'asset_last_holder' => self::assetLastHolder((string) ($args['tag'] ?? '')),
+            'asset_last_holder' => self::assetLastHolder((string) ($args['tag'] ?? ''), $user),
             'terminate_person' => self::terminatePerson((int) ($args['id'] ?? 0), $user, $executeMode),
             'reinstate_person' => self::reinstatePerson((int) ($args['id'] ?? 0), $user, $executeMode),
             'check_in_asset' => self::checkInAsset((int) ($args['id'] ?? 0), $user, $executeMode),
@@ -117,7 +117,18 @@ final class Tools
         };
     }
 
-    private static function findPerson(string $query): array
+    private static function personRowsFor(array $rows, array $user): array
+    {
+        if (($user['role_name'] ?? '') !== 'admin') {
+            foreach ($rows as &$row) {
+                unset($row['work_email'], $row['phone']);
+            }
+            unset($row);
+        }
+        return $rows;
+    }
+
+    private static function findPerson(string $query, array $user): array
     {
         $tokens = array_values(array_filter(array_map('trim', preg_split('/\s+/', $query) ?: [])));
         if ($tokens === []) {
@@ -140,39 +151,40 @@ final class Tools
         );
         return $rows === []
             ? ['matches' => [], 'note' => 'No person matches "' . $query . '".']
-            : ['matches' => $rows];
+            : ['matches' => self::personRowsFor($rows, $user)];
     }
 
-    private static function findAsset(string $query): array
+    private static function findAsset(string $query, array $user): array
     {
         $select = 'SELECT a.id, a.asset_tag, a.serial_number, a.brand, a.model_number, a.status, a.due_date,
                     p.full_name AS holder_person, d.name AS holder_department
-             FROM assets a
-             LEFT JOIN persons p ON p.id = a.assigned_to_person_id
-             LEFT JOIN departments d ON d.id = a.assigned_to_department_id';
-        $row = Database::fetchOne($select . ' WHERE a.asset_tag = :q OR a.serial_number = :q', ['q' => $query]);
+              FROM assets a
+              LEFT JOIN persons p ON p.id = a.assigned_to_person_id
+              LEFT JOIN departments d ON d.id = a.assigned_to_department_id';
+        [$scope, $scopeParams] = Auth::scopeWhere('a');
+        $row = Database::fetchOne($select . ' WHERE (a.asset_tag = :q OR a.serial_number = :q)' . $scope, array_merge(['q' => $query], $scopeParams));
         if ($row !== null) {
             return ['matches' => [$row]];
         }
         $rows = Database::fetchAll(
-            $select . ' WHERE a.asset_tag ILIKE :q OR a.serial_number ILIKE :q ORDER BY a.asset_tag LIMIT 5',
-            ['q' => '%' . str_replace(['%', '_'], ['\%', '\_'], $query) . '%']
+            $select . ' WHERE (a.asset_tag ILIKE :q OR a.serial_number ILIKE :q)' . $scope . ' ORDER BY a.asset_tag LIMIT 5',
+            array_merge(['q' => '%' . str_replace(['%', '_'], ['\%', '\_'], $query) . '%'], $scopeParams)
         );
         return $rows === []
             ? ['matches' => [], 'note' => 'No asset matches "' . $query . '".']
             : ['matches' => $rows];
     }
 
-    private static function listPersons(bool $terminated): array
+    private static function listPersons(bool $terminated, array $user): array
     {
         $rows = Database::fetchAll(
-            'SELECT p.id, p.full_name, p.job_title, p.is_terminated, d.name AS department,
+            'SELECT p.id, p.full_name, p.job_title, p.work_email, p.phone, p.is_terminated, d.name AS department,
                     (SELECT COUNT(*) FROM assets a WHERE a.assigned_to_person_id = p.id AND a.status = \'checked_out\')::int AS held
-             FROM persons p LEFT JOIN departments d ON d.id = p.department_id
-             WHERE p.is_terminated = :t ORDER BY p.full_name LIMIT 25',
+              FROM persons p LEFT JOIN departments d ON d.id = p.department_id
+              WHERE p.is_terminated = :t ORDER BY p.full_name LIMIT 25',
             ['t' => $terminated ? 1 : 0]
         );
-        return ['persons' => $rows];
+        return ['persons' => self::personRowsFor($rows, $user)];
     }
 
     private static function listAssets(array $args): array
@@ -207,8 +219,11 @@ final class Tools
         return ['total' => $total, 'assets' => $rows];
     }
 
-    private static function personDetail(int $id): array
+    private static function personDetail(int $id, array $user): array
     {
+        if ($deny = self::requireRole($user, ['admin'], 'view a full person record')) {
+            return $deny;
+        }
         $p = Person::find($id);
         if ($p === null) {
             return ['error' => 'Person not found (id ' . $id . ').'];
@@ -236,7 +251,7 @@ final class Tools
         return ['departments' => Department::all()];
     }
 
-    private static function assetLastHolder(string $tag): array
+    private static function assetLastHolder(string $tag, array $user): array
     {
         $candidates = [$tag];
         if (ctype_digit($tag)) {
@@ -247,7 +262,8 @@ final class Tools
         foreach ($candidates as $i => $c) {
             $params['c' . $i] = $c;
         }
-        $assetId = Database::fetchColumn('SELECT a.id FROM assets a WHERE ' . $whereSql, $params);
+        [$scope, $scopeParams] = Auth::scopeWhere('a');
+        $assetId = Database::fetchColumn('SELECT a.id FROM assets a WHERE (' . $whereSql . ')' . $scope, array_merge($params, $scopeParams));
         if ($assetId === null) {
             return ['error' => 'No asset with tag "' . $tag . '".'];
         }
@@ -347,6 +363,9 @@ final class Tools
             return ['error' => 'Person not found (id ' . $personId . ').'];
         }
         $deptId = !empty($args['department_id']) ? (int) $args['department_id'] : null;
+        if (($user['role_name'] ?? '') === 'department_manager' && $deptId !== null) {
+            return ['error' => 'You can check assets in, but only an admin can move them to another department.'];
+        }
         $deptName = null;
         if ($deptId !== null) {
             $deptName = Database::fetchColumn('SELECT name FROM departments WHERE id = :id', ['id' => $deptId]);
@@ -421,6 +440,9 @@ final class Tools
             }
             $who = $deptName;
         }
+        if ((string) ($args['due_date'] ?? '') !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $args['due_date'])) {
+            return ['error' => 'due_date must be a date like 2026-09-15.'];
+        }
         $extra = [
             'assigned_to_person_id' => $personId,
             'assigned_to_department_id' => $personId !== null ? null : $deptId,
@@ -440,7 +462,7 @@ final class Tools
         }
         try {
             Asset::setStatus($assetId, 'checked_out', $extra, $user);
-        } catch (RuntimeException $e) {
+        } catch (\Throwable $e) {
             return ['error' => $e->getMessage()];
         }
         return ['ok' => true, 'message' => $a['asset_tag'] . ' checked out to ' . $who . '.'];
@@ -475,7 +497,7 @@ final class Tools
 
     private static function setAssetDepartment(int $assetId, int $deptId, array $user, bool $executeMode): array
     {
-        if ($deny = self::requireRole($user, ['admin', 'department_manager'], 'change an asset department')) {
+        if ($deny = self::requireRole($user, ['admin'], 'change an asset department')) {
             return $deny;
         }
         $a = Asset::find($assetId, $user);
