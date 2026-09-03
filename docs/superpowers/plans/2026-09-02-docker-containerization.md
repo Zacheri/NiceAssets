@@ -1807,7 +1807,7 @@ In a browser at http://localhost:8080, logged in as `admin` with the password fr
 1. **Assistant** tab → Model panel shows `model.gguf` in the table (size, date).
 2. Select it → **Select model** → **Start** → pill goes `loading` → `ready` (green). (First load of a 4B model on CPU can take a minute or two.)
 3. Chat: ask "how many assets do we have?" → a number (0 on a fresh install) — proves the read tool round-trip through llama-server.
-4. Ask an action question, e.g. "create a department called Test" → a confirm card appears → Confirm → success row. (Verifies the two-phase action path end-to-end.)
+4. Ask an action question, e.g. "create a person called Test User" → a confirm card appears → Confirm → success row. (Verifies the two-phase action path end-to-end. Use `create_person` — the tool registry in `app/Services/Assistant/Tools.php` has no department-creation tool.)
 5. **Admin → System** → AI card shows the loaded model name and a green pill.
 
 - [ ] **Step 5: Verify backup job and cron**
