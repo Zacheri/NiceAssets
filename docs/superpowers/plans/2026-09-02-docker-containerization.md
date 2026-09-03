@@ -273,7 +273,15 @@ RUN apt-get update \
       > /etc/apt/sources.list.d/pgdg.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends nginx cron postgresql-client-17 \
+    libpq-dev libpng-dev libjpeg62-turbo-dev libwebp-dev libfreetype6-dev libzip-dev zip \
  && rm -rf /var/lib/apt/lists/*
+
+# Composer is not in the base image, and the app needs PHP extensions the base
+# image lacks: ext-pdo_pgsql + ext-gd (composer.json) and ext-zip (locked deps).
+RUN curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php \
+ && php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet \
+ && rm /tmp/composer-setup.php \
+ && docker-php-ext-install pdo_pgsql gd zip
 
 COPY --from=llama-builder /src/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
 
@@ -286,6 +294,7 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader \
              storage/labels storage/sessions storage/run storage/models \
  && chown -R www-data:www-data storage \
  && rm -f /etc/nginx/sites-enabled/default \
+ && rm -f /usr/local/etc/php-fpm.d/zz-docker.conf \
  && ln -s /var/www/atr/docker/nginx.conf /etc/nginx/sites-enabled/atr \
  && install -m 0644 docker/cron/atr /etc/cron.d/atr \
  && install -m 0755 docker/entrypoint.sh /usr/local/bin/atr-entrypoint
@@ -300,7 +309,8 @@ ENTRYPOINT ["atr-entrypoint"]
 
 Notes:
 - `COPY . .` respects `.dockerignore` (no vendor/, storage data, docs, .git).
-- The default php-fpm pool in the official image already listens on `127.0.0.1:9000` as `www-data`; nginx runs as `www-data` too, so no custom pool file is needed (spec deviation: `docker/php-fpm/atr.conf` dropped as redundant — upload limits come from the global ini in Step 2).
+- The official `php` image does NOT bundle Composer, and lacks `pdo_pgsql`/`gd`/`zip` — the Composer installer RUN and `docker-php-ext-install` are required (verified: the image without them fails `composer install` with exit 127).
+- The official image's `/usr/local/etc/php-fpm.d/zz-docker.conf` forces `daemonize = no` (it is designed to run php-fpm as foreground PID 1). Our entrypoint starts php-fpm itself and expects it to daemonize, so that file is removed; the stock `www.conf` pool already listens on `127.0.0.1:9000` as `www-data`, and nginx runs as `www-data` too, so no custom pool file is needed (spec deviation: `docker/php-fpm/atr.conf` dropped as redundant — upload limits come from the global ini in Step 2).
 - `config/app.local.php` is written at runtime into the image filesystem (not the volume) — that's intentional: it is regenerated every boot from env.
 
 - [ ] **Step 7: Create `docker-compose.yml`**
