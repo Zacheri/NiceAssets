@@ -620,3 +620,6 @@ canvas { max-width: 100%; }
 .pill-gray { background: var(--slate-bg); color: var(--ink-2); }
 .pill-amber { background: var(--amber-bg); color: var(--amber); }
 .pill-green { background: var(--green-bg); color: var(--green); }
+
+.progress { height: 8px; background: var(--slate-bg); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.progress-bar { height: 100%; width: 0; background: var(--primary); border-radius: 999px; transition: width .2s ease; }

@@ -112,6 +112,8 @@ final class LlmServer
             'pid' => $pid,
             'binary' => self::binary(),
             'models' => self::models(),
+            'port' => self::port(),
+            'context' => self::context(),
         ];
     }
 

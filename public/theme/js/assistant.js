@@ -11,6 +11,7 @@
   var inputEl = document.getElementById('assistant-input');
   var sendEl = document.getElementById('assistant-send');
   var clearEl = document.getElementById('assistant-clear');
+  var modelFile = document.getElementById('model-file');
   if (!stateEl || !messagesEl || !inputEl || !sendEl) return;
 
   var LS_KEY = 'atr_assistant_history';
@@ -32,12 +33,12 @@
   function renderState(st) {
     if (!st || !st.binary) {
       stateEl.className = 'assistant-state is-off';
-      stateEl.textContent = 'LLM not installed — an admin can install it from System';
+      stateEl.textContent = 'Model server unavailable — ask an admin to check the container';
       return;
     }
     if (!st.selected) {
       stateEl.className = 'assistant-state is-warn';
-      stateEl.textContent = 'No model found — drop a .gguf into the models folder (Admin → System)';
+      stateEl.textContent = 'No model uploaded yet — an admin can upload one from the Model panel';
       return;
     }
     var name = st.model || st.selected || '';
@@ -60,8 +61,143 @@
   function pollState() {
     fetch(base + '/assistant/state', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(renderState)
-      .catch(function () { renderState(null); });
+      .then(function (st) { renderState(st); renderModels(st); })
+      .catch(function () { renderState(null); renderModels(null); });
+  }
+
+  /* ---------- model panel (admin only) ---------- */
+  function say(t, bad) {
+    var el = document.getElementById('model-msg');
+    el.textContent = t;
+    el.style.color = bad ? 'var(--red)' : 'var(--muted)';
+  }
+  function postForm(path, data, done) {
+    var fd = new FormData();
+    fd.append('_token', token);
+    Object.keys(data || {}).forEach(function (k) { fd.append(k, data[k]); });
+    fetch(base + path, { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, json: j }; });
+      })
+      .then(done)
+      .catch(function () { done({ ok: false, json: { error: 'Network error.' } }); });
+  }
+
+  function renderModels(st) {
+    if (!modelFile) return;
+    var models = (st && st.models) || [];
+    var tbody = document.getElementById('model-tbody');
+    tbody.innerHTML = '';
+    models.forEach(function (m) {
+      var tr = document.createElement('tr');
+      var tdName = document.createElement('td');
+      tdName.textContent = m.name;
+      var tdSize = document.createElement('td');
+      tdSize.textContent = Math.round(m.size / 1048576) + ' MB';
+      var tdDate = document.createElement('td');
+      tdDate.textContent = new Date(m.mtime * 1000).toLocaleDateString();
+      var tdAct = document.createElement('td');
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'btn btn-ghost btn-sm';
+      del.textContent = 'Delete';
+      del.addEventListener('click', function () {
+        if (!confirm('Delete ' + m.name + '?')) return;
+        postForm('/admin/llm/delete', { model: m.name }, function (res) {
+          say(res.ok ? 'Deleted.' : ((res.json && res.json.error) || 'Delete failed.'), !res.ok);
+          pollState();
+        });
+      });
+      tdAct.appendChild(del);
+      tr.appendChild(tdName); tr.appendChild(tdSize); tr.appendChild(tdDate); tr.appendChild(tdAct);
+      tbody.appendChild(tr);
+    });
+    if (models.length === 0) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 4;
+      td.className = 'table-note';
+      td.textContent = 'No models yet — upload a .gguf file above.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+    var select = document.getElementById('model-select');
+    select.innerHTML = models.length
+      ? models.map(function (m) {
+          return '<option value="' + esc(m.name) + '"' + (st && st.selected === m.name ? ' selected' : '') + '>' + esc(m.name) + ' (' + Math.round(m.size / 1048576) + ' MB)</option>';
+        }).join('')
+      : '<option value="">No models</option>';
+    if (st) {
+      document.getElementById('model-port').value = st.port || 8082;
+      document.getElementById('model-context').value = st.context || 8192;
+      var pill = document.getElementById('model-pill');
+      pill.textContent = st.status;
+      pill.className = 'pill ' + (st.status === 'ready' && st.matches_selected ? 'pill-green' : st.status === 'loading' ? 'pill-amber' : 'pill-gray');
+    }
+  }
+
+  if (modelFile) {
+    document.getElementById('model-upload').addEventListener('click', function () {
+      var file = modelFile.files && modelFile.files[0];
+      if (!file) { say('Choose a .gguf file first.', true); return; }
+      var wrap = document.getElementById('model-progress-wrap');
+      var bar = document.getElementById('model-progress');
+      var label = document.getElementById('model-progress-label');
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', base + '/admin/llm/upload');
+      xhr.upload.onprogress = function (e) {
+        if (!e.lengthComputable) return;
+        var pct = Math.round((e.loaded / e.total) * 100);
+        bar.style.width = pct + '%';
+        label.textContent = pct + '%';
+      };
+      function done(ok, msg) {
+        wrap.hidden = true;
+        bar.style.width = '0';
+        label.textContent = '0%';
+        say(msg, !ok);
+        if (ok) { modelFile.value = ''; pollState(); }
+      }
+      xhr.onload = function () {
+        var j = {};
+        try { j = JSON.parse(xhr.responseText); } catch (e2) {}
+        if (xhr.status >= 200 && xhr.status < 300 && j.ok) done(true, 'Uploaded ' + j.model + '.');
+        else done(false, (j && j.error) || 'Upload failed.');
+      };
+      xhr.onerror = function () { done(false, 'Upload failed — network error.'); };
+      wrap.hidden = false;
+      var fd = new FormData();
+      fd.append('_token', token);
+      fd.append('model', file);
+      xhr.send(fd);
+    });
+
+    document.getElementById('model-select-btn').addEventListener('click', function () {
+      postForm('/admin/llm/select', { model: document.getElementById('model-select').value }, function (res) {
+        say(res.ok ? 'Model selected.' : ((res.json && res.json.error) || 'Failed.'), !res.ok);
+        pollState();
+      });
+    });
+    document.getElementById('model-config').addEventListener('click', function () {
+      postForm('/admin/llm/config', {
+        port: document.getElementById('model-port').value,
+        context: document.getElementById('model-context').value
+      }, function (res) {
+        say(res.ok ? ((res.json && res.json.note) || 'Saved.') : ((res.json && res.json.error) || 'Failed.'), !res.ok);
+      });
+    });
+    document.getElementById('model-start').addEventListener('click', function () {
+      postForm('/admin/llm/start', {}, function (res) {
+        say(res.ok ? ((res.json && res.json.note) || 'Starting…') : ((res.json && res.json.error) || 'Failed.'), !res.ok);
+        pollState();
+      });
+    });
+    document.getElementById('model-stop').addEventListener('click', function () {
+      postForm('/admin/llm/stop', {}, function (res) {
+        say(res.ok ? 'Stopped.' : ((res.json && res.json.error) || 'Failed.'), !res.ok);
+        pollState();
+      });
+    });
   }
   pollState();
   setInterval(pollState, 4000);
