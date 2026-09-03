@@ -1,0 +1,11 @@
+.git
+.github
+.superpowers
+docs
+install
+vendor
+storage/*
+*.md
+.DS_Store
+.env
+docker-compose.yml

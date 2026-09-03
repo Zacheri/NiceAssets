@@ -1,0 +1,11 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Daily backup (DB dump + uploads archive) — 02:00
+0 2 * * * www-data php /var/www/atr/bin/backup.php daily >> /var/www/atr/storage/logs/backup-cron.log 2>&1
+
+# Weekly activity report — Saturday 18:00
+0 18 * * 6 www-data php /var/www/atr/bin/weekly_report.php >> /var/www/atr/storage/logs/weekly-report-cron.log 2>&1
+
+# Alert sweep (warranty / low stock / overdue emails) — every 15 minutes
+*/15 * * * * www-data php /var/www/atr/bin/alert_sweep.php >> /var/www/atr/storage/logs/alert-sweep-cron.log 2>&1
