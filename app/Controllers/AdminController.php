@@ -408,6 +408,71 @@ class AdminController
         Response::json(['ok' => true, 'note' => 'Saved. The model server restarts with the new settings on next use.']);
     }
 
+    public function llmUpload(): void
+    {
+        Auth::requireLogin();
+        $file = $_FILES['model'] ?? null;
+        if (!is_array($file) || !isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+            $code = is_array($file) ? (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+            $msg = match ($code) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds the upload limit (12 GB).',
+                UPLOAD_ERR_PARTIAL => 'Upload was only partial. Try again.',
+                UPLOAD_ERR_NO_FILE => 'No file received.',
+                default => 'Upload failed (code ' . $code . ').',
+            };
+            Response::json(['error' => $msg], 400);
+        }
+        $name = basename((string) ($file['name'] ?? ''));
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.gguf$/', $name)) {
+            Response::json(['error' => 'Invalid file name. Upload a .gguf model file.'], 400);
+        }
+        $dir = LlmServer::modelsDir();
+        $size = (int) ($file['size'] ?? 0);
+        if ($size <= 0) {
+            Response::json(['error' => 'Empty file.'], 400);
+        }
+        if (is_file($dir . '/' . $name)) {
+            Response::json(['error' => 'A model with that name already exists. Delete it first.'], 400);
+        }
+        $free = (int) disk_free_space($dir);
+        if ($size > $free) {
+            Response::json(['error' => 'Not enough disk space: need ' . round($size / 1048576) . ' MB, have ' . round($free / 1048576) . ' MB.'], 400);
+        }
+        if (!move_uploaded_file((string) $file['tmp_name'], $dir . '/' . $name)) {
+            Response::json(['error' => 'Could not save the uploaded file.'], 500);
+        }
+        Audit::log('llm.model_upload', 'llm', $name, ['size' => $size]);
+        if (LlmServer::selectedModel() === null) {
+            LlmServer::setSelectedModel($name);
+        }
+        Response::json(['ok' => true, 'model' => $name, 'size' => $size]);
+    }
+
+    public function llmDelete(): void
+    {
+        Auth::requireLogin();
+        $name = basename((string) Request::post('model', ''));
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.gguf$/', $name)) {
+            Response::json(['error' => 'Invalid model name.'], 400);
+        }
+        $dir = LlmServer::modelsDir();
+        if (!is_file($dir . '/' . $name)) {
+            Response::json(['error' => 'Model file not found.'], 404);
+        }
+        $st = LlmServer::state();
+        if ($st['status'] === 'ready' && $st['model'] === $name) {
+            Response::json(['error' => 'Stop the model server before deleting the loaded model.'], 400);
+        }
+        if (!unlink($dir . '/' . $name)) {
+            Response::json(['error' => 'Could not delete the file.'], 500);
+        }
+        if ((string) Setting::get('llm.selected_model', '') === $name) {
+            Setting::set('llm.selected_model', '');
+        }
+        Audit::log('llm.model_delete', 'llm', $name, []);
+        Response::json(['ok' => true]);
+    }
+
     private function dirSize(string $dir): string
     {
         $size = 0;
