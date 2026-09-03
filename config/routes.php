@@ -103,5 +103,4 @@ return [
     ['method' => 'POST', 'path' => '/admin/llm/start',     'controller' => 'Admin', 'action' => 'llmStart',   'roles' => ['admin']],
     ['method' => 'POST', 'path' => '/admin/llm/stop',      'controller' => 'Admin', 'action' => 'llmStop',    'roles' => ['admin']],
     ['method' => 'POST', 'path' => '/admin/llm/config',    'controller' => 'Admin', 'action' => 'llmConfig',  'roles' => ['admin']],
-    ['method' => 'POST', 'path' => '/admin/llm/install',   'controller' => 'Admin', 'action' => 'llmInstall', 'roles' => ['admin']],
 ];

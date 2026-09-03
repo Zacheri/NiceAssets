@@ -13,30 +13,8 @@ final class Backup
 {
     public static function pgBinary(string $name): string
     {
-        $candidates = [
-            '/opt/homebrew/bin/' . $name,
-            '/usr/local/bin/' . $name,
-            '/usr/local/Cellar/postgresql@17/17.*/bin/' . $name,
-        ];
-        foreach ($candidates as $candidate) {
-            if (str_contains($candidate, '*')) {
-                $globbed = glob($candidate);
-                foreach ($globbed as $match) {
-                    if (is_executable($match)) {
-                        return $match;
-                    }
-                }
-                continue;
-            }
-            if (is_executable($candidate)) {
-                return $candidate;
-            }
-        }
         $which = trim((string) shell_exec('command -v ' . escapeshellarg($name) . ' 2>/dev/null'));
-        if ($which !== '' && is_executable($which)) {
-            return $which;
-        }
-        return $name;
+        return $which !== '' && is_executable($which) ? $which : $name;
     }
 
     public static function run(string $label = ''): array

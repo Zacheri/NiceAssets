@@ -61,15 +61,7 @@ final class LlmServer
     public static function binary(): ?string
     {
         $out = trim((string) shell_exec('command -v llama-server 2>/dev/null'));
-        if ($out !== '') {
-            return $out;
-        }
-        foreach (['/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'] as $candidate) {
-            if (is_file($candidate) && is_executable($candidate)) {
-                return $candidate;
-            }
-        }
-        return null;
+        return $out !== '' ? $out : null;
     }
 
     private static function pidFile(): string
@@ -135,7 +127,7 @@ final class LlmServer
     {
         $bin = self::binary();
         if ($bin === null) {
-            throw new RuntimeException('llama-server not found. Install llama.cpp from the System tab or run: brew install llama.cpp');
+            throw new RuntimeException('llama-server binary not found.');
         }
         $model = self::selectedModel();
         if ($model === null) {
@@ -204,11 +196,5 @@ final class LlmServer
             sleep(2);
         }
         throw new RuntimeException('Model is still loading. Try again in a moment or choose a smaller model.');
-    }
-
-    public static function install(): array
-    {
-        $out = (string) shell_exec('brew install llama.cpp 2>&1');
-        return ['ok' => self::binary() !== null, 'output' => $out];
     }
 }

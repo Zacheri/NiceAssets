@@ -408,16 +408,6 @@ class AdminController
         Response::json(['ok' => true, 'note' => 'Saved. The model server restarts with the new settings on next use.']);
     }
 
-    public function llmInstall(): void
-    {
-        Auth::requireLogin();
-        $res = LlmServer::install();
-        if (!$res['ok']) {
-            Response::json(['error' => 'llama.cpp install failed. Try: brew install llama.cpp', 'output' => substr((string) $res['output'], 0, 2000)], 500);
-        }
-        Response::json(['ok' => true, 'message' => 'llama.cpp installed.', 'output' => substr((string) $res['output'], 0, 2000)]);
-    }
-
     private function dirSize(string $dir): string
     {
         $size = 0;

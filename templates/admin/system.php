@@ -41,11 +41,11 @@
   <div class="panel-head"><h2>Background services</h2></div>
   <div class="panel-body">
     <ul class="checklist">
-      <li>Nginx + PHP-FPM — managed by launchd (brew services), starts at boot</li>
-      <li>PostgreSQL — managed by launchd (brew services), starts at boot</li>
-      <li>Daily backup — 02:00 (launchd agent)</li>
-      <li>Weekly activity report — Saturday 18:00 (launchd agent)</li>
-      <li>Alert sweep (email notifications) — every 15 minutes (launchd agent)</li>
+      <li>Web (nginx + PHP-FPM) — container entrypoint, starts with the app</li>
+      <li>PostgreSQL — separate container, starts with the app</li>
+      <li>Daily backup — 02:00 (cron)</li>
+      <li>Weekly activity report — Saturday 18:00 (cron)</li>
+      <li>Alert sweep (email notifications) — every 15 minutes (cron)</li>
     </ul>
     <div class="table-note">Health endpoint for monitoring: <code>/healthz</code> (returns JSON, no login required).</div>
   </div>
@@ -76,9 +76,6 @@
     </div>
 
     <div class="page-actions" style="margin-top:12px">
-      <?php if (($llm['state']['binary'] ?? null) === null): ?>
-        <button type="button" class="btn btn-primary" id="llm-install">Install llama.cpp (brew)</button>
-      <?php endif; ?>
       <button type="button" class="btn" id="llm-select">Select model</button>
       <button type="button" class="btn" id="llm-config">Save settings</button>
       <button type="button" class="btn btn-primary" id="llm-start">Start</button>
@@ -126,7 +123,7 @@
       })
       .catch(function () {});
   }
-  Array.prototype.forEach.call(document.querySelectorAll('#llm-select,#llm-config,#llm-start,#llm-stop,#llm-install'), function (btn) {
+  Array.prototype.forEach.call(document.querySelectorAll('#llm-select,#llm-config,#llm-start,#llm-stop'), function (btn) {
     btn.addEventListener('click', function () {
       btn.disabled = true;
       say('Working…');
@@ -138,9 +135,6 @@
         post('/admin/llm/start', {}, function (r) { btn.disabled = false; say(r.json && (r.json.error || r.json.note), !r.ok); refresh(); });
       } else if (btn.id === 'llm-stop') {
         post('/admin/llm/stop', {}, function (r) { btn.disabled = false; say(r.json && r.json.error ? r.json.error : 'Stopped.', !r.ok); refresh(); });
-      } else if (btn.id === 'llm-install') {
-        say('Installing llama.cpp via brew — this can take a few minutes…');
-        post('/admin/llm/install', {}, function (r) { btn.disabled = false; say(r.json && (r.json.message || r.json.error), !r.ok); refresh(); });
       }
     });
   });
