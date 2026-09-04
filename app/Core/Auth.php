@@ -28,8 +28,14 @@ final class Auth
             $failures = (int) $user['login_failures'] + 1;
             $locked = $failures >= self::MAX_FAILURES;
             Database::execute(
-                'UPDATE users SET login_failures = :f, locked_until = CASE WHEN :f >= :max THEN now() + (:m || \' minutes\')::interval ELSE NULL END WHERE id = :id',
-                ['f' => $failures, 'max' => self::MAX_FAILURES, 'm' => self::LOCK_MINUTES, 'id' => $user['id']]
+                'UPDATE users SET login_failures = :f, locked_until = :locked WHERE id = :id',
+                [
+                    'f' => $failures,
+                    'locked' => $locked
+                        ? (new \DateTimeImmutable('+' . self::LOCK_MINUTES . ' minutes'))->format('Y-m-d\TH:i:sP')
+                        : null,
+                    'id' => $user['id'],
+                ]
             );
             return false;
         }
