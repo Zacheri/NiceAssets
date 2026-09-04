@@ -38,7 +38,7 @@ A backup is a `pg_dump -Fc` of the database plus a `tar.gz` of
 
     # 4. If the backup includes an uploads archive, extract it
     docker compose exec app tar -xzf /var/www/atr/storage/backups/<uploads-file>.tar.gz \
-      -C /var/www/atr/storage
+      -C /var/www/atr/storage/uploads
 
     # 5. Start the app
     docker compose start app
