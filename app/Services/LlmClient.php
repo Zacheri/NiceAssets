@@ -9,10 +9,10 @@ use RuntimeException;
 
 final class LlmClient
 {
-    public static function chat(array $messages, array $toolDefs, callable $toolHandler, int $maxRounds = 8, int $timeout = 120): array
+    public static function chat(array $messages, array $toolDefs, callable $toolHandler, int $maxRounds = 8, int $timeout = 300): array
     {
         $trace = [];
-        $deadline = time() + $timeout;
+        $deadline = time() + $timeout * $maxRounds;
         for ($round = 0; $round < $maxRounds; $round++) {
             if (time() > $deadline) {
                 throw new RuntimeException('The model took too long. Try a smaller model or rephrase.');
@@ -77,7 +77,10 @@ final class LlmClient
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $err = curl_error($ch);
         if ($raw === false) {
-            Logger::error('llama-server unreachable', ['error' => $err]);
+            Logger::error('llama-server request failed', ['error' => $err]);
+            if (stripos($err, 'timed out') !== false) {
+                throw new RuntimeException('The model took too long to reply. Try a smaller model or rephrase.');
+            }
             throw new RuntimeException('Cannot reach the local model server. Start it from the System tab.');
         }
         $data = json_decode((string) $raw, true);
