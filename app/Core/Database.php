@@ -20,9 +20,8 @@ final class Database
             return self::$pdo;
         }
         $cfg = Config::get('db');
-        // gssencmode=disable: with the default ("prefer"), libpq probes the GSS/Kerberos
-        // credential cache on connect, which segfaults PHP-FPM workers on macOS
-        // (CorePreferences fork in a launchd-supervised process). This app is LAN-local.
+        // gssencmode=disable: GSS/Kerberos credential-cache probing on connect is
+        // disabled; it is unnecessary here and caused crashes on some platforms.
         $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;gssencmode=disable', $cfg['host'], $cfg['port'], $cfg['name']);
         $attempts = 3;
         $lastError = null;

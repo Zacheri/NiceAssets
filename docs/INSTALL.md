@@ -1,117 +1,100 @@
-# Installing ATR Inventory — Step by Step
+# Installation (Docker)
 
-This guide is written for someone who does not think of themselves as "technical."
-Follow it top to bottom and you will have a working inventory system on your Mac
-that your whole office network can use.
+ATR Inventory runs entirely in Docker: one app container (nginx + PHP-FPM +
+llama-server + cron) and one Postgres container.
 
-You need:
+## Prerequisites
 
-- A Mac (Apple Silicon or Intel) running a recent macOS
-- Internet access (one time, to download the required programs)
-- Your Mac's administrator password (you'll be asked for it once)
+- Docker Engine with the Compose plugin (`docker compose version`)
+- RAM: ~4 GB baseline, plus 2–8 GB depending on the GGUF model you upload
+  (rule of thumb: model file size + ~1 GB)
+- Disk: ~1 GB for the image, plus room for models and data
 
-## Step 1 — Put the folder somewhere permanent
+## Install
 
-Copy the `ATR` folder to a location that will not get cleaned up, for example:
+    git clone https://github.com/Zacheri/NiceAssets.git atr
+    cd atr
+    docker compose up --build
 
-```
-/Users/yourname/Documents/ATR
-```
+The first build compiles llama.cpp from source (the tag is pinned in the
+Dockerfile) — expect 5–15 minutes. Later starts are fast.
 
-Everything (data, backups, settings) lives inside this one folder from here on.
-If you ever move the folder, run the installer again afterwards (Step 3) and all
-scheduled jobs will re-point to the new location automatically.
+When the `app` container is healthy, open http://localhost:8080.
 
-## Step 2 — Open Terminal
+### First login
 
-1. Press `Command + Space`, type **Terminal**, press Enter.
-2. A black window appears. This is normal — it is where we run one command.
+On first boot the entrypoint sets the `admin` password:
 
-## Step 3 — Run the installer
+- If `ATR_ADMIN_PASS` is set (environment or `.env`), that password is used.
+- Otherwise a random 16-character password is generated and printed once to
+  the container logs:
 
-Type (or copy-paste) this into Terminal, then press Enter:
+      docker compose logs app | grep "ATR admin password"
 
-```
-cd ~/Documents/ATR && ./install/install.sh
-```
+The password is only set on first boot (marker file
+`storage/.admin_initialized`). Change it later under Admin → Users.
 
-> If you put the folder somewhere else, use that path instead of `~/Documents/ATR`.
+## Configuration
 
-Now the computer does the work. You will see lines like:
+Copy `.env.example` to `.env` and adjust. All variables are optional.
 
-- `Installing nginx…` — the program that serves the web page
-- `Starting PostgreSQL…` — the program that stores your data
-- `Loading schema… / Loading base seed…` — building your database (users and settings only — no sample data)
-- `Wrote nginx server config (port 8080)`
-- `Scheduled com.atr.backup` (and two more) — the automatic jobs
+| Variable | Default | Purpose |
+|---|---|---|
+| `ATR_PORT` | `8080` | Host port the web UI is published on |
+| `ATR_DB_PASS` | `atr` | Postgres password (app + db containers must match) |
+| `ATR_ADMIN_PASS` | *(random)* | Admin password, applied on first boot only |
+| `ATR_TZ` | `UTC` | Timezone used by the app and cron schedules |
 
-**When you are asked for your Mac password, type it and press Enter.**
-(Nothing appears on screen while you type a password — this is normal.)
+Advanced (usually left alone): `ATR_DB_HOST`, `ATR_DB_PORT`, `ATR_DB_NAME`,
+`ATR_DB_USER`.
 
-It takes a few minutes the first time (it downloads programs). Do not close the
-window while it runs. When it finishes you will see a big box like:
+### Using your own Postgres
 
-```
- ATR Inventory is installed.
-   Local:    http://127.0.0.1:8080
-   Network:  http://192.168.1.24:8080
-   Sign in:  admin / Admin1234
-```
+Point the app at an external Postgres 17 instance:
 
-## Step 4 — Open it in a browser
+    ATR_DB_HOST=your-host
+    ATR_DB_PORT=5432
+    ATR_DB_NAME=atr
+    ATR_DB_USER=atr
+    ATR_DB_PASS=...
 
-- **On the Mac that runs it:** open a browser and go to `http://127.0.0.1:8080`
-- **On any other computer on the same Wi‑Fi/office network:** go to the
-  "Network" address it printed (e.g. `http://192.168.1.24:8080`)
+The entrypoint applies `db/schema.sql` and `db/seed.sql` (both idempotent)
+on every start, so the database is created and upgraded automatically. Then
+comment out the `db` service in `docker-compose.yml`.
 
-Sign in with **admin / Admin1234**.
+### Bind-mounting storage (optional)
 
-### Important — change the password now
+To keep data on the host filesystem (e.g. for external backup tools),
+replace the named volume in `docker-compose.yml`:
 
-1. Click **Admin** (left menu) → **Users**
-2. In the "Edit user" section at the bottom, choose **admin**
-3. Type a new password (at least 8 characters) in *New password*
-4. Click **Save user**
+    volumes:
+      - ./data:/var/www/atr/storage
 
-## Step 5 — Start using it
+## Firewall / LAN access
 
-- **Add your first asset:** Assets → **+ New Asset**. Fill in at least the Asset
-  Tag Number, then pick a category, site, and location.
-- **Add photos:** Photos → upload pictures (they can be reused by many assets).
-  On an asset page you can link gallery photos and mark one as the thumbnail.
-- **Check things out:** open an asset → **Check out** → pick the person and an
-  optional due date.
-- **Scan with a USB scanner:** point it at a QR label printed from any asset
-  page (click **⋯ → Replicate** is not needed — use **QR label** or **Print sheet**).
-  Scanning just opens/searches the asset. No special setup.
-- **Look at everything:** Reports → pick a report. Use **Export Excel (formulas)**
-  if you want the spreadsheet to keep calculating depreciation live.
+The app is designed for a trusted local network. Only the web port (8080 by
+default) is published; Postgres and the model server are internal. If you
+expose it beyond your LAN, put it behind a TLS-terminating reverse proxy —
+the app has no built-in TLS.
 
-## What runs automatically (no action needed)
+## GPU inference (not included)
 
-| Job | When | What |
-|-----|------|------|
-| Backup | Every day at 2:00 AM | Saves the database + photos to `storage/backups` |
-| Weekly report | Saturdays, 6:00 PM | Summary of Mon–Fri activity (Reports → Weekly) |
-| Alert sweep | Every 15 minutes | Sends due email alerts (warranty, low stock, depreciation) |
-| The web app itself | Always | Restarts itself automatically after a reboot |
+The bundled llama-server is built CPU-only (`GGML_NATIVE=OFF`). For GPU
+inference you would build a custom image with a CUDA-enabled llama.cpp and
+adjust the spawn flags in `app/Services/LlmServer.php` — out of scope for
+the stock image.
 
-## If something goes wrong
+## Troubleshooting
 
-| Symptom | Fix |
-|---------|-----|
-| Page won't load | Wait 30 seconds, reload. If still bad: run `php bin/health.php` in Terminal (from the ATR folder) and read what it says. |
-| "Dependencies are not installed" page | Run `./install/install.sh` again — it repairs everything. |
-| Forgot admin password | `php bin/reset_admin_password.php admin NewPassword123` (from the ATR folder) |
-| Mac was asleep when the 2 AM backup ran | The backup will run at the next wake — this is normal. |
-| Moved the ATR folder | Re-run `./install/install.sh` from the new location. |
-| Need to start over | `./install/uninstall.sh` (keeps your database unless you say otherwise) |
-
-## About the network address
-
-The "Network" address is this Mac's address on your office network. If your
-network uses DHCP (typical), it can change after a reboot or network outage. If
-other computers can no longer reach the app, reload the installer's instructions
-by checking the Mac's address: open System Settings → Network → Wi‑Fi/Ethernet →
-Details → Status. You can also ask your IT person to reserve a fixed address for
-the Mac so the URL never changes.
+- **Port already in use** — change `ATR_PORT` in `.env`, then
+  `docker compose up -d`.
+- **`app` container restarts in a loop** — `docker compose logs app`. Most
+  often Postgres is unreachable (check the `db` container) or the schema
+  apply failed (Postgres version mismatch — use Postgres 17).
+- **Model won't load** —
+  `docker compose exec app tail -50 /var/www/atr/storage/logs/llama.log`.
+  Usually not enough RAM, or a truncated model file (re-upload).
+- **Slow replies** — expected on CPU with large models; upload a smaller
+  model or lower the context length (Assistant tab → Save settings).
+- **Reset the admin password** —
+  `docker compose exec app php bin/reset_admin_password.php admin NewPass123`

@@ -1,112 +1,86 @@
 # ATR Inventory
 
-A local-network inventory management application for tracking mixed assets — electronics,
-furniture, rewards cards — across multiple sites and sub-locations. Built to mimic
-AssetTiger core functionality: lifecycle tracking, depreciation, alerts, reports,
-barcode/QR scanning, and role-based access, with a modern responsive dashboard.
+A local-network inventory management web application in the spirit of
+AssetTiger: asset lifecycle tracking (available → checked out → in repair /
+broken / lost / disposed / sold / donated), 5-year linear depreciation,
+warranty / low-stock / overdue alerts, PDF & Excel reports,
+AssetTiger-compatible QR/barcode labels, role-based access (Admin /
+Department Manager / Viewer), a full audit trail, daily backups with
+one-click restore — and a local-LLM AI assistant that can read the inventory
+and (with your confirmation) perform actions.
 
-Stack: **PHP 8 (vanilla, no framework) · PostgreSQL · Nginx + PHP-FPM** on macOS.
-Designed for 10,000+ asset records and ~10 transactions/minute, with no external
-cache layer (PostgreSQL query optimization instead).
+Everything runs in Docker. No model is bundled: you upload a GGUF model of
+your choice from the Assistant tab.
 
-## Features
+## Requirements
 
-- **Asset lifecycle** — Available → Checked Out → In Repair / Broken / Lost /
-  Disposed / Sold / Donated. Check-outs go to a person or a department, with
-  direct person-to-person transfer (no check-in cycle). Work orders with
-  auto-numbering; completing a WO returns the asset to stock.
-- **Persons** — employee records (name, job title, personal/work email, phone,
-  address, department, notes) with an active/terminated toggle on each card and
-  in the edit form. Terminated persons stay on assets they hold but are hidden
-  from check-out and transfer pickers.
-- **Full asset record** — tag, serial, model, brand, category, department,
-  site + sub-location, purchase date/cost, warranty, due date, sub-quantity,
-  created-by tracking, status reason.
-- **Depreciation** — 5-year linear, computed live (cost/60 per month). Current
-  value, accumulated depreciation, and remaining months shown on every asset
-  and in the dashboard.
-- **Photos** — centralized gallery, unlimited per asset, reusable across assets
-  of the same variety, first photo = thumbnail, thumbnails in UI and PDF reports.
-- **Search** — full-text (PostgreSQL tsvector) + ILIKE fallback, advanced filters
-  (category, department, site, location, status, brand, model, assigned person,
-  purchase/warranty date ranges, overdue-only), sortable, paginated grid with
-  adjustable column count (1–6).
-- **Barcode / QR** — AssetTiger-compatible QR labels (raw asset tag payload).
-  USB keyboard-wedge scanners work out of the box: scan anywhere and the asset
-  opens. Scanning is search/view only.
-- **Alerts** — warranty (90/60/30-day tiers), low stock (per-category thresholds),
-  multi-asset assignment (2+ similar assets per person), full depreciation
-  (per-category toggle), overdue checkouts. Dashboard always; email where the
-  spec requires, with per-role email toggles and once-per-day dedupe.
-- **Reports** — Inventory Count, Low Stock, Depreciation, Person Assignment,
-  Assignment Duration, Multi-Asset Alert, plus a custom report builder.
-  PDF export (with photo thumbnails) and Excel export with a **live-formulas or
-  static-values** toggle. Every run is versioned (date/time/version) and
-  re-downloadable.
-- **Weekly report** — automatic every Saturday (launchd) summarizing the
-  previous Mon–Fri: check-ins, check-outs, transfers, and status changes.
-- **RBAC + audit** — Admin / Department Manager / Viewer, department scoping,
-  and a complete audit trail of every action.
-- **Resilience** — PDO auto-reconnect on dropped connections, launchd-managed
-  services (survive reboot), daily automated backups (pg_dump -Fc, keep 14),
-  one-click restore in the admin panel.
+- Docker Engine with the Compose plugin (`docker compose version`)
+- ~4 GB free RAM for the app; add 2–8 GB depending on the model you upload
+  (rule of thumb: model file size + ~1 GB)
+- ~1 GB disk for the image, plus room for models and data
 
-## Quick start
+## Quickstart
 
-```bash
-cd ATR
-./install/install.sh
-```
+    git clone https://github.com/Zacheri/NiceAssets.git atr && cd atr
+    docker compose up --build     # first build compiles llama.cpp (5–15 min)
 
-That's it. The installer:
+Wait until `docker compose ps` shows `app` as healthy, then read the
+generated admin password:
 
-1. Installs Homebrew packages if missing (nginx, postgresql, php, composer)
-2. Creates the `atr` database, loads the schema + base seed (users and settings)
-3. Runs `composer install`
-4. Writes Nginx config (default port **8080**, no sudo needed) and starts it
-5. Schedules background jobs (daily backup, Saturday weekly report, 15-min alert sweep)
+    docker compose logs app | grep "ATR admin password"
 
-Then open **http://127.0.0.1:8080** (or the LAN URL the installer prints) and sign in:
+Open http://localhost:8080 and log in as `admin`.
 
-| Username | Password    | Role               |
-|----------|-------------|--------------------|
-| admin    | Admin1234   | Admin              |
-| manager  | Manager1234 | Department Manager |
-| viewer   | Viewer1234  | Viewer             |
+To choose your own admin password on first boot, create a `.env` file (or
+copy `.env.example`):
 
-**Change these passwords immediately** (Admin → Users, or
-`php bin/reset_admin_password.php admin <new-password>`).
+    ATR_ADMIN_PASS=YourLongPassword
 
-The app starts **empty** — no sample assets or history are loaded. Add your
-categories, sites, locations, and departments under **Admin**, then create
-assets under **Assets → New Asset**. (A demo dataset exists for evaluation:
-re-run the installer and answer `y` to the sample-data prompt, or pass
-`ATR_SEED=1`.)
+## Using the AI assistant
 
-Full step-by-step for non-technical users: [docs/INSTALL.md](docs/INSTALL.md)
-Operations, backup/restore, secondary server: [docs/OPERATIONS.md](docs/OPERATIONS.md)
-Architecture and how to extend: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+1. Download a GGUF model you like (any size up to 12 GB) — e.g. from
+   Hugging Face.
+2. Open the **Assistant** tab and upload the `.gguf` file (admin role).
+3. Select the model and press **Start**. The status pill turns green when
+   it is loaded.
+4. Chat. Read answers are instant; actions show a plan you confirm first.
 
-## Directory layout
+Nothing leaves your network — the model runs locally in the container.
 
-```
-app/            Core framework, models, controllers, services
-bin/            CLI jobs (weekly report, alert sweep, backup, health check)
-config/         app.php (defaults), app.local.php (local creds), routes.php
-db/             schema.sql, seed.sql (base), seed-demo.sql (opt-in)
-install/        install.sh, nginx.conf, launchd plists, backup/restore
-public/         webroot (index.php front controller + css/js/img)
-storage/        uploads, backups, logs, reports, labels, sessions
-templates/      PHP view templates
-docs/           user + developer documentation
-```
+## Configuration
 
-## Useful commands
+| Variable | Default | Purpose |
+|---|---|---|
+| `ATR_PORT` | `8080` | Host port for the web UI |
+| `ATR_DB_PASS` | `atr` | Postgres password (app + db container) |
+| `ATR_ADMIN_PASS` | *(random, printed to logs)* | Admin password on first boot |
+| `ATR_TZ` | `UTC` | Timezone (app + cron schedules) |
 
-```bash
-php bin/health.php                  # system self-check
-./install/backup.sh                 # manual backup now
-./install/restore.sh <dump> [uploads.tar.gz]   # restore
-./install/uninstall.sh              # remove services/config (DB kept unless asked)
-curl http://127.0.0.1:8080/healthz  # JSON health endpoint for monitoring
-```
+See `.env.example` and `docs/INSTALL.md` for the full reference, including
+how to use your own Postgres or bind-mount the data.
+
+## Data & backups
+
+- App data (uploads, backups, logs, reports, labels, models, sessions) lives
+  in the `atr_storage` Docker volume at `/var/www/atr/storage`.
+- Postgres data lives in the `atr_pgdata` volume.
+- The app takes a daily backup (DB dump + uploads archive) at 02:00, keeping
+  14 days. Restore procedure: `docs/OPERATIONS.md`.
+
+## Documentation
+
+- `docs/INSTALL.md` — installation and configuration
+- `docs/OPERATIONS.md` — backups, restore, jobs, logs, updates
+- `docs/ARCHITECTURE.md` — how the app is put together
+- `AGENTS.md` — guide for AI agents and contributors
+
+## Development
+
+See `AGENTS.md`. Quick loop:
+
+    docker compose up --build
+    find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+
+## License
+
+MIT — see `LICENSE`.

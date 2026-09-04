@@ -7,7 +7,7 @@ $range = \App\Services\WeeklyReport::previousWeekRange();
     <a class="back-link" href="<?= e(url('/reports')) ?>">‹ All reports</a>
     <h1 class="page-title">Weekly Activity Reports</h1>
     <div class="page-sub">
-      Auto-generated every Saturday via launchd. Covers Mon–Fri: check-ins, check-outs, transfers, and status changes.
+      Auto-generated every Saturday via cron. Covers Mon–Fri: check-ins, check-outs, transfers, and status changes.
       Next automatic window: <strong><?= e(date('M j', strtotime((string) $range[0]))) ?> – <?= e(date('M j', strtotime((string) $range[1]))) ?></strong>
     </div>
   </div>

@@ -13,7 +13,7 @@ if (!is_file($autoload)) {
         . '<div style="text-align:center;max-width:480px"><h1>ATR Inventory</h1>'
         . '<p>Dependencies are not installed yet.</p>'
         . '<p>Run from the project folder:<br><code style="background:#1e293b;padding:4px 10px;border-radius:6px">composer install</code></p>'
-        . '<p>or re-run the installer: <code style="background:#1e293b;padding:4px 10px;border-radius:6px">./install/install.sh</code></p></div></body>';
+        . '<p>or rebuild the image: <code style="background:#1e293b;padding:4px 10px;border-radius:6px">docker compose up --build</code></p></div></body>';
     exit;
 }
 
