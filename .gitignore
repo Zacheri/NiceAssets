@@ -8,6 +8,7 @@
 /storage/reports/*
 /storage/labels/*
 /config/app.local.php
+/.env
 .DS_Store
 *.log
 /storage/models/*

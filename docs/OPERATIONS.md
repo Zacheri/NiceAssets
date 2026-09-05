@@ -23,27 +23,39 @@ A backup is a `pg_dump -Fc` of the database plus a `tar.gz` of
 
 ### Restore
 
-    # 1. Stop the app so nothing writes during the restore
-    docker compose stop app
+The usual path is the UI: **Admin → Backups** lists every backup (dump
+name, size, created). Click **Restore** on the row you want and confirm
+the prompt. It restores that backup's database dump and, when one exists,
+its uploads archive, overwriting the current data. It runs with the app
+up, so make sure no one is working.
 
-    # 2. Find the backup you want
+CLI fallback, if the web UI is not usable:
+
+    # 1. Find the backup you want
     docker compose exec app ls -lt /var/www/atr/storage/backups | head
 
-    # 3. Restore the database (fresh public schema, then the dump)
-    docker compose exec -e PGPASSWORD=atr app psql -h db -U atr -d atr \
-      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
-    docker compose exec -e PGPASSWORD=atr app pg_restore \
-      -h db -U atr -d atr --clean --if-exists \
-      /var/www/atr/storage/backups/<dump-file>.dump
-
-    # 4. If the backup includes an uploads archive, extract it
+    # 2. If the backup includes an uploads archive, extract it (app still up)
     docker compose exec app tar -xzf /var/www/atr/storage/backups/<uploads-file>.tar.gz \
       -C /var/www/atr/storage/uploads
 
-    # 5. Start the app
-    docker compose start app
+    # 3. Stop the app so nothing writes during the DB restore
+    docker compose stop app
 
-Check the actual file names in `storage/backups/` before running Step 3/4.
+    # 4. Copy the dump into the db container (storage volume is only on app)
+    docker compose cp app:/var/www/atr/storage/backups/<dump-file>.dump db:/tmp/restore.dump
+
+    # 5. Restore the database from the db container (fresh public schema, then the dump)
+    docker compose exec -e PGPASSWORD=atr db psql -h 127.0.0.1 -U atr -d atr \
+      -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+    docker compose exec -e PGPASSWORD=atr db pg_restore \
+      -h 127.0.0.1 -U atr -d atr --clean --if-exists /tmp/restore.dump
+
+    # 6. Start the app and drop the copied dump
+    docker compose start app
+    docker compose exec db rm /tmp/restore.dump
+
+Check the actual file names in `storage/backups/` before running Steps
+2–5. If you set `ATR_DB_PASS` in `.env`, use that value for `PGPASSWORD`.
 
 ## Logs
 
