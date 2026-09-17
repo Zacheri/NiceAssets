@@ -12,10 +12,13 @@
 #      host = host.docker.internal, port = 8082.
 #
 # This script runs on the host, NOT inside the container.
+#
+# Optional: CONTEXT env var overrides the context window (default 8192).
 
 set -euo pipefail
 
 PORT="${PORT:-8082}"
+CONTEXT="${CONTEXT:-8192}"
 
 MODEL="${1:-}"
 if [[ -z "$MODEL" ]]; then
@@ -36,4 +39,4 @@ fi
 echo "Starting llama-server on 127.0.0.1:${PORT} with ${MODEL}"
 echo "Now in Nice Assets → Assistant tab → Model panel: enable 'External server', host = host.docker.internal, port = ${PORT}."
 
-exec llama-server --host 127.0.0.1 --port "$PORT" -m "$MODEL" -ngl 99 -c 8192
+exec llama-server --host 127.0.0.1 --port "$PORT" -m "$MODEL" -ngl 99 -c "$CONTEXT"

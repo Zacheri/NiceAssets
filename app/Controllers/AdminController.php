@@ -387,7 +387,11 @@ class AdminController
     public function llmStop(): void
     {
         Auth::requireLogin();
-        LlmServer::stop();
+        try {
+            LlmServer::stop();
+        } catch (RuntimeException $e) {
+            Response::json(['error' => $e->getMessage()], 500);
+        }
         Response::json(['ok' => true]);
     }
 
@@ -408,13 +412,13 @@ class AdminController
             Response::json(['error' => 'Host must be an IP address or hostname (letters, digits, dots, dashes, underscores).'], 400);
         }
         $wasManaged = !LlmServer::external();
+        if ($wasManaged) {
+            LlmServer::stop();
+        }
         Setting::set('llm.port', (string) $port);
         Setting::set('llm.context', (string) $context);
         Setting::set('llm.host', $host);
         Setting::set('llm.external', $external);
-        if ($wasManaged) {
-            LlmServer::stop();
-        }
         $note = $external === '1'
             ? 'Saved. Nice Assets will now use the external server at ' . $host . ':' . $port . '.'
             : 'Saved. The model server restarts with the new settings on next use.';

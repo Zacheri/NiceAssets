@@ -40,11 +40,13 @@ class AssistantController
         unset($_SESSION['assistant_plan']);
 
         $st = LlmServer::state();
-        if ($st['binary'] === null) {
-            Response::json(['error' => 'llama.cpp is not installed. Install it from Admin → System (AI Assistant card).', 'code' => 'no_binary']);
-        }
-        if ($st['selected'] === null) {
-            Response::json(['error' => 'No model available. Drop a .gguf file into the models folder (Admin → System).', 'code' => 'no_model']);
+        if (!$st['external']) {
+            if ($st['binary'] === null) {
+                Response::json(['error' => 'llama.cpp is not installed. Install it from the Model panel on the Assistant tab.', 'code' => 'no_binary']);
+            }
+            if ($st['selected'] === null) {
+                Response::json(['error' => 'No model available. Drop a .gguf file into the models folder (Model panel, Assistant tab).', 'code' => 'no_model']);
+            }
         }
         try {
             LlmServer::ensureRunning();

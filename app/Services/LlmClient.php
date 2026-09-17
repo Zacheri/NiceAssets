@@ -81,7 +81,7 @@ final class LlmClient
             if (stripos($err, 'timed out') !== false) {
                 throw new RuntimeException('The model took too long to reply. Try a smaller model or rephrase.');
             }
-            throw new RuntimeException('Cannot reach the local model server. Start it from the System tab.');
+            throw new RuntimeException('Cannot reach the model server. Check the LLM settings on the Assistant tab.');
         }
         $data = json_decode((string) $raw, true);
         if ($code < 200 || $code >= 300 || !is_array($data)) {
