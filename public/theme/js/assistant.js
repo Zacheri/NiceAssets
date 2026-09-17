@@ -31,6 +31,16 @@
 
   /* ---------- state chip (poll) ---------- */
   function renderState(st) {
+    if (st && st.external) {
+      if (st.status === 'ready') {
+        stateEl.className = 'assistant-state is-on';
+        stateEl.textContent = 'External model ready — ' + (st.model || (st.host + ':' + st.port));
+      } else {
+        stateEl.className = 'assistant-state is-off';
+        stateEl.textContent = 'External model server unreachable at ' + (st.host || '127.0.0.1') + ':' + (st.port || 8082);
+      }
+      return;
+    }
     if (!st || !st.binary) {
       stateEl.className = 'assistant-state is-off';
       stateEl.textContent = 'Model server unavailable — ask an admin to check the container';
@@ -101,6 +111,7 @@
       del.type = 'button';
       del.className = 'btn btn-ghost btn-sm';
       del.textContent = 'Delete';
+      del.disabled = !!(st && st.external);
       del.addEventListener('click', function () {
         if (!confirm('Delete ' + m.name + '?')) return;
         postForm('/admin/llm/delete', { model: m.name }, function (res) {
@@ -130,6 +141,22 @@
     if (st) {
       document.getElementById('model-port').value = st.port || 8082;
       document.getElementById('model-context').value = st.context || 8192;
+      document.getElementById('model-host').value = st.host || '127.0.0.1';
+      document.getElementById('model-external').checked = !!st.external;
+      var ext = !!st.external;
+      ['model-upload', 'model-file', 'model-select', 'model-select-btn', 'model-start', 'model-stop'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = ext;
+      });
+      var banner = document.getElementById('model-external-banner');
+      if (ext) {
+        banner.hidden = false;
+        banner.textContent = 'Externally managed at ' + (st.host || '127.0.0.1') + ':' + (st.port || 8082)
+          + (st.status === 'ready' ? ' — Running: ' + (st.model || '') : ' — unreachable');
+      } else {
+        banner.hidden = true;
+        banner.textContent = '';
+      }
       var pill = document.getElementById('model-pill');
       pill.textContent = st.status;
       pill.className = 'pill ' + (st.status === 'ready' && st.matches_selected ? 'pill-green' : st.status === 'loading' ? 'pill-amber' : 'pill-gray');
@@ -181,7 +208,9 @@
     document.getElementById('model-config').addEventListener('click', function () {
       postForm('/admin/llm/config', {
         port: document.getElementById('model-port').value,
-        context: document.getElementById('model-context').value
+        context: document.getElementById('model-context').value,
+        host: document.getElementById('model-host').value,
+        external: document.getElementById('model-external').checked ? '1' : '0'
       }, function (res) {
         say(res.ok ? ((res.json && res.json.note) || 'Saved.') : ((res.json && res.json.error) || 'Failed.'), !res.ok);
       });

@@ -12,6 +12,7 @@
 <section class="panel animate-fadeup" style="margin-bottom:16px">
   <div class="panel-head"><h2>Model</h2><span class="pill pill-gray" id="model-pill">…</span></div>
   <div class="panel-body">
+    <div class="llm-external-banner" id="model-external-banner" hidden></div>
     <div class="form-grid">
       <label class="field"><span>Upload a .gguf model (max 12 GB)</span>
         <input type="file" id="model-file" accept=".gguf">
@@ -34,8 +35,13 @@
       <label class="field"><span>Selected model</span>
         <select id="model-select"></select>
       </label>
+      <label class="field"><span>Host</span><input type="text" id="model-host" value="127.0.0.1" spellcheck="false"></label>
       <label class="field"><span>Port</span><input type="number" id="model-port" min="1024" max="65535"></label>
       <label class="field"><span>Context</span><input type="number" id="model-context" min="2048" max="32768" step="1024"></label>
+      <div class="field field-check">
+        <label><input type="checkbox" id="model-external"> External server (llama-server runs on the host, e.g. macOS Metal)</label>
+        <span></span>
+      </div>
     </div>
 
     <div class="page-actions" style="margin-top:12px">

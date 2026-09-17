@@ -77,12 +77,36 @@ default) is published; Postgres and the model server are internal. If you
 expose it beyond your LAN, put it behind a TLS-terminating reverse proxy —
 the app has no built-in TLS.
 
-## GPU inference (not included)
+## GPU acceleration
 
-The bundled llama-server is built CPU-only (`GGML_NATIVE=OFF`). For GPU
-inference you would build a custom image with a CUDA-enabled llama.cpp and
-adjust the spawn flags in `app/Services/LlmServer.php` — out of scope for
-the stock image.
+By default the assistant runs the llama-server built into the app container,
+CPU-only (`GGML_NATIVE=OFF`). That works on every platform with zero
+prerequisites, but it is slow — expect a few tokens per second with 4B
+models.
+
+### macOS / Apple Silicon
+
+The container cannot use the Apple GPU — Docker Desktop has no Mac GPU
+passthrough. Instead, run a native `llama-server` on the host and point Nice
+Assets at it:
+
+1. Install llama.cpp on the host: `brew install llama.cpp` (the helper
+   script tells you if it is missing).
+2. Start the host server in a terminal:
+
+       scripts/macos-llama-server.sh /path/to/model.gguf
+
+   With no argument it picks the first `.gguf` in `./storage/models`.
+3. In Nice Assets → Assistant tab → Model panel, enable **External server**
+   and set host `host.docker.internal`, port `8082` (or your `PORT`).
+
+The model file must be a local path the host can read — the host server
+loads it directly, not from the container.
+
+### Linux with a GPU (Nvidia / AMD / Intel)
+
+In-container GPU builds are planned but not yet available. Until then, use
+the stock CPU image (or a host-native server as above).
 
 ## Troubleshooting
 

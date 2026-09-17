@@ -396,16 +396,29 @@ class AdminController
         Auth::requireLogin();
         $port = (int) Request::post('port', 0);
         $context = (int) Request::post('context', 0);
+        $host = trim((string) Request::post('host', ''));
+        $external = in_array(strtolower((string) Request::post('external', '0')), ['1', 'true', 'yes', 'on'], true) ? '1' : '0';
         if ($port < 1024 || $port > 65535) {
             Response::json(['error' => 'Port must be between 1024 and 65535.'], 400);
         }
         if ($context < 2048 || $context > 32768) {
             Response::json(['error' => 'Context must be between 2048 and 32768.'], 400);
         }
+        if ($host === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $host)) {
+            Response::json(['error' => 'Host must be an IP address or hostname (letters, digits, dots, dashes, underscores).'], 400);
+        }
+        $wasManaged = !LlmServer::external();
         Setting::set('llm.port', (string) $port);
         Setting::set('llm.context', (string) $context);
-        LlmServer::stop();
-        Response::json(['ok' => true, 'note' => 'Saved. The model server restarts with the new settings on next use.']);
+        Setting::set('llm.host', $host);
+        Setting::set('llm.external', $external);
+        if ($wasManaged) {
+            LlmServer::stop();
+        }
+        $note = $external === '1'
+            ? 'Saved. Nice Assets will now use the external server at ' . $host . ':' . $port . '.'
+            : 'Saved. The model server restarts with the new settings on next use.';
+        Response::json(['ok' => true, 'note' => $note]);
     }
 
     public function llmUpload(): void

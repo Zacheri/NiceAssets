@@ -64,7 +64,7 @@ final class LlmClient
 
     public static function request(string $path, array $body, int $timeout = 120): array
     {
-        $ch = curl_init('http://127.0.0.1:' . LlmServer::port() . $path);
+        $ch = curl_init('http://' . LlmServer::host() . ':' . LlmServer::port() . $path);
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_SLASHES),

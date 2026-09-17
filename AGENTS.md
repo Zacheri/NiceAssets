@@ -78,8 +78,9 @@ Useful one-liners:
 ## Container notes
 
 - The image builds llama.cpp from source (pinned tag in the Dockerfile,
-  `GGML_NATIVE=OFF`, CPU-only) in a builder stage; the runtime image is
-  `php:8.4-fpm-bookworm` + nginx + cron + postgresql-client-17.
+  currently v0.4.1, `GGML_NATIVE=OFF`, CPU-only) in a builder stage; the
+  runtime image is `php:8.4-fpm-bookworm` + nginx + cron +
+  postgresql-client-17.
 - Entrypoint (`docker/entrypoint.sh`) on every boot: sets TZ → renders
   `config/app.local.php` from env → waits for Postgres → applies
   `db/schema.sql` + `db/seed.sql` (idempotent) → first-boot admin password
@@ -90,6 +91,10 @@ Useful one-liners:
   (`App\Services\LlmServer`: spawn/kill by PID, restart on model change).
   Models are user-uploaded `.gguf` files in `storage/models` (Assistant tab,
   admin only, 12 GB cap). No model is bundled.
+- The LLM endpoint is configurable at runtime (`llm.host`, `llm.port`,
+  `llm.external` settings — Assistant tab → Model panel): external mode
+  talks to a host-native server (e.g. macOS Metal, which the container
+  cannot reach); `scripts/macos-llama-server.sh` starts one.
 - Env vars: `NAIMS_PORT` (host port), `NAIMS_DB_*`, `NAIMS_ADMIN_PASS` (first boot
   only), `NAIMS_TZ`. See `.env.example`.
 

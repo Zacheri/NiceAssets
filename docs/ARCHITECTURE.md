@@ -138,9 +138,9 @@ Local verification:
 
 ## AI Assistant (local LLM)
 
-- `app/Services/LlmServer.php` — app-managed `llama-server` on 127.0.0.1 (port from `llm.port`, default 8082). Models = `.gguf` files in `storage/models` (override `llm.models_dir`); selection = `llm.selected_model`. PID in `storage/run/llama.pid`, log in `storage/logs/llama.log`. Never reachable from outside localhost.
+- `app/Services/LlmServer.php` — app-managed `llama-server` (endpoint from `llm.host`/`llm.port`, default 127.0.0.1:8082; `llm.external` switches to a host-managed server, e.g. macOS Metal). Models = `.gguf` files in `storage/models` (override `llm.models_dir`); selection = `llm.selected_model`. PID in `storage/run/llama.pid` (managed mode only), log in `storage/logs/llama.log`.
 - `app/Services/LlmClient.php` — OpenAI-compatible `/v1/chat/completions` loop (tools, ≤8 rounds, 120 s budget) → `{text, trace}`.
 - `app/Services/Assistant/Tools.php` — the ONLY path from the model to the DB. Asset reads are department-scoped via `Auth::scopeWhere`; person name lookups strip PII (email/phone) for non-admins; `person_detail` is admin-only (mirrors the UI). Action tools run in two modes: dry-run (returns `{preview, op, args}`) and execute (calls the normal model layer). RBAC is enforced per-tool with `requireRole()` — never trust the model.
 - `app/Controllers/AssistantController.php` — `/assistant*` routes. Session: `llm_history` (last 12 messages) and `assistant_plan` (pending ops). Audit: `assistant.query` (every prompt) and `assistant.execute` (every confirm).
 - Two-phase safety: a model can only *propose*; the UI renders a confirm card; `POST /assistant/confirm` executes the stored plan through `Tools::execute(..., executeMode: true)` and audits each result.
-- Settings keys (all in `settings`, no migrations): `llm.models_dir`, `llm.port`, `llm.context`, `llm.selected_model`. Model management (upload, select, start/stop) lives on the Assistant tab (admin role); the `llama-server` binary ships in the image.
+- Settings keys (all in `settings`, no migrations): `llm.models_dir`, `llm.host`, `llm.port`, `llm.context`, `llm.external`, `llm.selected_model`. Model management (upload, select, start/stop, endpoint config) lives on the Assistant tab (admin role); the `llama-server` binary ships in the image.

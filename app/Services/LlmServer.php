@@ -33,9 +33,19 @@ final class LlmServer
         return $out;
     }
 
+    public static function host(): string
+    {
+        return (string) Setting::get('llm.host', '127.0.0.1');
+    }
+
     public static function port(): int
     {
         return max(1, (int) Setting::get('llm.port', 8082));
+    }
+
+    public static function external(): bool
+    {
+        return in_array(strtolower((string) Setting::get('llm.external', false)), ['1', 'true', 'yes'], true);
     }
 
     public static function context(): int
@@ -84,19 +94,22 @@ final class LlmServer
     public static function state(): array
     {
         $selected = self::selectedModel();
+        $external = self::external();
         $pid = null;
-        $pidf = self::pidFile();
-        if (is_file($pidf)) {
-            $p = (int) trim((string) file_get_contents($pidf));
-            if ($p > 0 && self::pidAlive($p)) {
-                $pid = $p;
-            } else {
-                @unlink($pidf);
+        if (!$external) {
+            $pidf = self::pidFile();
+            if (is_file($pidf)) {
+                $p = (int) trim((string) file_get_contents($pidf));
+                if ($p > 0 && self::pidAlive($p)) {
+                    $pid = $p;
+                } else {
+                    @unlink($pidf);
+                }
             }
         }
 
         $loaded = null;
-        $raw = self::httpGet('http://127.0.0.1:' . self::port() . '/v1/models', 1);
+        $raw = self::httpGet('http://' . self::host() . ':' . self::port() . '/v1/models', 1);
         if ($raw !== null) {
             $data = json_decode($raw, true);
             $loaded = $data['data'][0]['id'] ?? null;
@@ -114,6 +127,8 @@ final class LlmServer
             'models' => self::models(),
             'port' => self::port(),
             'context' => self::context(),
+            'host' => self::host(),
+            'external' => $external,
         ];
     }
 
@@ -127,6 +142,9 @@ final class LlmServer
 
     public static function start(): void
     {
+        if (self::external()) {
+            throw new RuntimeException('The LLM server is externally managed. Start or stop it on the host, not from Nice Assets.');
+        }
         $bin = self::binary();
         if ($bin === null) {
             throw new RuntimeException('llama-server binary not found.');
@@ -166,6 +184,9 @@ final class LlmServer
 
     public static function stop(): void
     {
+        if (self::external()) {
+            throw new RuntimeException('The LLM server is externally managed. Start or stop it on the host, not from Nice Assets.');
+        }
         $st = self::state();
         if ($st['pid'] !== null) {
             shell_exec('kill ' . (int) $st['pid'] . ' 2>/dev/null');
@@ -181,6 +202,13 @@ final class LlmServer
 
     public static function ensureRunning(): void
     {
+        if (self::external()) {
+            if (self::state()['status'] === 'ready') {
+                return;
+            }
+            throw new RuntimeException('External LLM server unreachable at ' . self::host() . ':' . self::port()
+                . '. Start it on the host (macOS: scripts/macos-llama-server.sh) and check the External settings on the Assistant tab.');
+        }
         $st = self::state();
         if ($st['status'] === 'ready' && $st['matches_selected']) {
             return;

@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 FROM php:8.4-cli-bookworm AS llama-builder
 
-ARG LLAMA_CPP_TAG=v0.3.0
+ARG LLAMA_CPP_TAG=v0.4.1
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends cmake g++ git ca-certificates \
