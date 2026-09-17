@@ -24,8 +24,8 @@ final class Backup
             mkdir($dir, 0775, true);
         }
         $stamp = date('Ymd_His') . ($label !== '' ? '_' . preg_replace('/[^A-Za-z0-9_-]/', '', $label) : '');
-        $dumpFile = $dir . '/atr_db_' . $stamp . '.dump';
-        $uploadsFile = $dir . '/atr_uploads_' . $stamp . '.tar.gz';
+        $dumpFile = $dir . '/naims_db_' . $stamp . '.dump';
+        $uploadsFile = $dir . '/naims_uploads_' . $stamp . '.tar.gz';
 
         $db = Config::get('db');
         $env = 'PGPASSWORD=' . escapeshellarg((string) $db['pass']);
@@ -63,7 +63,7 @@ final class Backup
     {
         $dir = Config::get('storage.backups');
         $files = [];
-        foreach (glob($dir . '/atr_db_*.dump') ?: [] as $file) {
+        foreach (glob($dir . '/naims_db_*.dump') ?: [] as $file) {
             $files[] = [
                 'path' => $file,
                 'name' => basename($file),
@@ -101,7 +101,7 @@ final class Backup
             throw new RuntimeException('Restore failed: ' . implode(' ', array_slice($output, -5)));
         }
 
-        $uploadsArchive = glob($dir . '/atr_uploads_' . date('Ymd_His', filemtime($file)) . '_.tar.gz') ?: [];
+        $uploadsArchive = glob($dir . '/naims_uploads_' . date('Ymd_His', filemtime($file)) . '_.tar.gz') ?: [];
         if ($uploadsArchive !== []) {
             exec('tar -xzf ' . escapeshellarg($uploadsArchive[0]) . ' -C ' . escapeshellarg(Config::get('storage.uploads')) . ' 2>&1', $out2, $rc2);
             if ($rc2 !== 0) {

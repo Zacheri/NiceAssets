@@ -63,7 +63,7 @@ final class Export
             'title' => $title,
             'generated' => date('F j, Y g:i A'),
             'rows' => count($rows) . ($truncated ? ' of ' . (int) $options['total_rows'] : ''),
-            'generator' => 'ATR Inventory ' . Config::get('app_version'),
+            'generator' => 'Nice Assets ' . Config::get('app_version'),
             'version' => $options['run_version'] ?? '',
         ];
 
@@ -125,7 +125,7 @@ final class Export
             'A2',
             'Generated ' . date('F j, Y g:i A')
             . (($options['run_version'] ?? '') !== '' ? ' · Version ' . $options['run_version'] : '')
-            . ' · ATR Inventory ' . Config::get('app_version')
+            . ' · Nice Assets ' . Config::get('app_version')
             . ($withFormulas ? ' · Live formulas' : ' · Static values')
         );
 
@@ -256,7 +256,7 @@ final class Export
             . '<div class="top">' . $photoHtml . '<div style="text-align:center">' . $qrHtml
             . '<div style="font-size:9px;color:#64748b;margin-top:4px">Scan tag</div></div>'
             . '<table class="fields">' . $table . '</table></div>'
-            . '<div class="foot">Generated ' . date('F j, Y g:i A') . ' · ATR Inventory ' . e(Config::get('app_version'))
+            . '<div class="foot">Generated ' . date('F j, Y g:i A') . ' · Nice Assets ' . e(Config::get('app_version'))
             . ' · Depreciation: 5-year linear from purchase date</div>'
             . '</body></html>';
 

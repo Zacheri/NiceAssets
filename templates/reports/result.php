@@ -124,6 +124,6 @@ foreach ($columns as $i => $col) {
     </div>
   </section>
   <script>
-  window.ATR.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
+  window.NAIMS.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
   </script>
 <?php endif; ?>

@@ -106,9 +106,9 @@
 </div>
 
 <script>
-window.ATR.charts = {
+window.NAIMS.charts = {
   categories: <?= json_encode(array_map(static fn ($r) => ['label' => $r['name'], 'value' => (int) $r['count']], $category_chart), JSON_UNESCAPED_SLASHES) ?>,
   status: <?= json_encode($status_chart, JSON_UNESCAPED_SLASHES) ?>
 };
-window.ATR.canModify = <?= \App\Core\Auth::canModify() ? 'true' : 'false' ?>;
+window.NAIMS.canModify = <?= \App\Core\Auth::canModify() ? 'true' : 'false' ?>;
 </script>

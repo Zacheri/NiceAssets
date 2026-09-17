@@ -1,6 +1,6 @@
-# ATR Inventory — Agent & Contributor Guide
+# Nice Assets — Agent & Contributor Guide
 
-ATR Inventory is a local-network asset-management web app in the spirit of
+Nice Assets is a local-network asset-management web app in the spirit of
 AssetTiger: asset lifecycle tracking (available → checked out → in repair /
 broken / lost / disposed / sold / donated), 5-year linear depreciation,
 warranty / low-stock / overdue alerts, PDF & Excel reports, QR labels, RBAC
@@ -24,7 +24,7 @@ Everything runs in Docker:
     docker compose logs -f app       # first-boot admin password is printed here
     docker compose down -v           # stop and wipe all data
 
-App: http://localhost:8080 (host port: `ATR_PORT`). Health: `GET /healthz`.
+App: http://localhost:8080 (host port: `NAIMS_PORT`). Health: `GET /healthz`.
 
 Useful one-liners:
 
@@ -32,7 +32,7 @@ Useful one-liners:
     docker compose exec app php bin/backup.php daily      # run a backup now
     docker compose exec app php bin/alert_sweep.php       # run the alert sweep now
     docker compose exec app php bin/weekly_report.php     # send the weekly report now
-    docker compose exec app ls /var/www/atr/storage/models  # uploaded LLM models
+    docker compose exec app ls /var/www/naims/storage/models  # uploaded LLM models
 
 ## Layout
 
@@ -47,7 +47,7 @@ Useful one-liners:
     config/           app.php (defaults) + app.local.php (generated in Docker)
                       + routes.php (all routes, with role restrictions)
     db/               schema.sql + seed.sql (both idempotent)
-    docker/           entrypoint.sh, nginx.conf, cron/atr, php/99-atr.ini
+    docker/           entrypoint.sh, nginx.conf, cron/naims, php/99-naims.ini
     public/           webroot: index.php front controller + theme (css/js/img)
     templates/        PHP views, one dir per area
     storage/          runtime data (volume-mounted in Docker): uploads,
@@ -59,7 +59,7 @@ Useful one-liners:
 - SQL belongs in `app/Models/*`. Controllers stay thin.
 - Every POST is CSRF-protected: the router validates `_token` automatically.
   Forms use `csrf_field()`; fetch/XHR bodies append `_token` from
-  `window.ATR.token`.
+  `window.NAIMS.token`.
 - Roles: `admin`, `department_manager`, `viewer`. Restrict routes with
   `'roles' => ['admin']` in `config/routes.php`; check `Auth::hasRole()` /
   `Auth::isAdmin()` in controllers; department managers are row-scoped via
@@ -84,14 +84,14 @@ Useful one-liners:
   `config/app.local.php` from env → waits for Postgres → applies
   `db/schema.sql` + `db/seed.sql` (idempotent) → first-boot admin password
   (marker: `storage/.admin_initialized`) → starts cron, php-fpm, nginx.
-- Background jobs are cron (`/etc/cron.d/atr`, from `docker/cron/atr`):
+- Background jobs are cron (`/etc/cron.d/naims`, from `docker/cron/naims`):
   backup daily 02:00, weekly report Sat 18:00, alert sweep every 15 min.
 - The app manages the llama-server lifecycle itself
   (`App\Services\LlmServer`: spawn/kill by PID, restart on model change).
   Models are user-uploaded `.gguf` files in `storage/models` (Assistant tab,
   admin only, 12 GB cap). No model is bundled.
-- Env vars: `ATR_PORT` (host port), `ATR_DB_*`, `ATR_ADMIN_PASS` (first boot
-  only), `ATR_TZ`. See `.env.example`.
+- Env vars: `NAIMS_PORT` (host port), `NAIMS_DB_*`, `NAIMS_ADMIN_PASS` (first boot
+  only), `NAIMS_TZ`. See `.env.example`.
 
 ## Verification bar
 

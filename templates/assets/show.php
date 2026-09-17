@@ -234,9 +234,9 @@ $available = $asset['status'] === 'available';
 </div>
 
 <script>
-window.ATR.canModify = <?= $canModify ? 'true' : 'false' ?>;
-window.ATR.isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
-window.ATR.asset = {
+window.NAIMS.canModify = <?= $canModify ? 'true' : 'false' ?>;
+window.NAIMS.isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
+window.NAIMS.asset = {
   id: <?= (int) $asset['id'] ?>,
   tag: '<?= e($asset['asset_tag']) ?>',
   assignedEmail: '<?= e($asset['assigned_email'] ?? '') ?>',

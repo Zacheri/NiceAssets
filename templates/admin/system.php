@@ -16,7 +16,7 @@
 <section class="panel animate-fadeup" style="animation-delay:.05s">
   <div class="panel-body">
     <div class="detail-grid">
-      <div><span class="dk">ATR Inventory version</span><span class="dv"><strong>v<?= e($version) ?></strong></span></div>
+      <div><span class="dk">Nice Assets version</span><span class="dv"><strong>v<?= e($version) ?></strong></span></div>
       <div><span class="dk">PHP</span><span class="dv"><?= e($php) ?></span></div>
       <div><span class="dk">Operating system</span><span class="dv"><?= e($os) ?></span></div>
       <div><span class="dk">PostgreSQL</span><span class="dv"><?= e(explode(' ', $postgres, 3)[1] ?? $postgres) ?></span></div>
@@ -66,8 +66,8 @@
 <script>
 (function () {
   'use strict';
-  var ATR = window.ATR || {};
-  var base = ATR.base || '';
+  var NAIMS = window.NAIMS || {};
+  var base = NAIMS.base || '';
   function $(id) { return document.getElementById(id); }
   function refresh() {
     fetch(base + '/admin/llm/state', { credentials: 'same-origin' })

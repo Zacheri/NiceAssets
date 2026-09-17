@@ -68,7 +68,7 @@ final class LlmClient
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_SLASHES),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer atr-local'],
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer naims-local'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 3,
             CURLOPT_TIMEOUT => $timeout,

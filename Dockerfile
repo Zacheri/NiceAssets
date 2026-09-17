@@ -46,9 +46,9 @@ RUN curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php \
 
 COPY --from=llama-builder /src/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
 
-WORKDIR /var/www/atr
+WORKDIR /var/www/naims
 COPY . .
-COPY docker/php/99-atr.ini /usr/local/etc/php/conf.d/99-atr.ini
+COPY docker/php/99-naims.ini /usr/local/etc/php/conf.d/99-naims.ini
 
 RUN composer install --no-dev --no-interaction --optimize-autoloader \
  && mkdir -p storage/uploads storage/backups storage/logs storage/reports \
@@ -56,13 +56,13 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader \
  && chown -R www-data:www-data storage \
   && rm -f /etc/nginx/sites-enabled/default \
   && rm -f /usr/local/etc/php-fpm.d/zz-docker.conf \
-  && ln -s /var/www/atr/docker/nginx.conf /etc/nginx/sites-enabled/atr \
- && install -m 0644 docker/cron/atr /etc/cron.d/atr \
- && install -m 0755 docker/entrypoint.sh /usr/local/bin/atr-entrypoint
+  && ln -s /var/www/naims/docker/nginx.conf /etc/nginx/sites-enabled/naims \
+ && install -m 0644 docker/cron/naims /etc/cron.d/naims \
+ && install -m 0755 docker/entrypoint.sh /usr/local/bin/naims-entrypoint
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
   CMD php -r 'exit(strpos((string)@file_get_contents("http://127.0.0.1:8080/healthz"), "\"status\":\"ok\"") === false ? 1 : 0);'
 
-ENTRYPOINT ["atr-entrypoint"]
+ENTRYPOINT ["naims-entrypoint"]

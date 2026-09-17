@@ -1,6 +1,6 @@
 # Installation (Docker)
 
-ATR Inventory runs entirely in Docker: one app container (nginx + PHP-FPM +
+Nice Assets runs entirely in Docker: one app container (nginx + PHP-FPM +
 llama-server + cron) and one Postgres container.
 
 ## Prerequisites
@@ -12,8 +12,8 @@ llama-server + cron) and one Postgres container.
 
 ## Install
 
-    git clone https://github.com/Zacheri/NiceAssets.git atr
-    cd atr
+    git clone https://github.com/Zacheri/NiceAssets.git naims
+    cd naims
     docker compose up --build
 
 The first build compiles llama.cpp from source (the tag is pinned in the
@@ -25,11 +25,11 @@ When the `app` container is healthy, open http://localhost:8080.
 
 On first boot the entrypoint sets the `admin` password:
 
-- If `ATR_ADMIN_PASS` is set (environment or `.env`), that password is used.
+- If `NAIMS_ADMIN_PASS` is set (environment or `.env`), that password is used.
 - Otherwise a random 16-character password is generated and printed once to
   the container logs:
 
-      docker compose logs app | grep "ATR admin password"
+      docker compose logs app | grep "NAIMS admin password"
 
 The password is only set on first boot (marker file
 `storage/.admin_initialized`). Change it later under Admin → Users.
@@ -40,23 +40,23 @@ Copy `.env.example` to `.env` and adjust. All variables are optional.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ATR_PORT` | `8080` | Host port the web UI is published on |
-| `ATR_DB_PASS` | `atr` | Postgres password (app + db containers must match) |
-| `ATR_ADMIN_PASS` | *(random)* | Admin password, applied on first boot only |
-| `ATR_TZ` | `UTC` | Timezone used by the app and cron schedules |
+| `NAIMS_PORT` | `8080` | Host port the web UI is published on |
+| `NAIMS_DB_PASS` | `naims` | Postgres password (app + db containers must match) |
+| `NAIMS_ADMIN_PASS` | *(random)* | Admin password, applied on first boot only |
+| `NAIMS_TZ` | `UTC` | Timezone used by the app and cron schedules |
 
-Advanced (usually left alone): `ATR_DB_HOST`, `ATR_DB_PORT`, `ATR_DB_NAME`,
-`ATR_DB_USER`.
+Advanced (usually left alone): `NAIMS_DB_HOST`, `NAIMS_DB_PORT`, `NAIMS_DB_NAME`,
+`NAIMS_DB_USER`.
 
 ### Using your own Postgres
 
 Point the app at an external Postgres 17 instance:
 
-    ATR_DB_HOST=your-host
-    ATR_DB_PORT=5432
-    ATR_DB_NAME=atr
-    ATR_DB_USER=atr
-    ATR_DB_PASS=...
+    NAIMS_DB_HOST=your-host
+    NAIMS_DB_PORT=5432
+    NAIMS_DB_NAME=naims
+    NAIMS_DB_USER=naims
+    NAIMS_DB_PASS=...
 
 The entrypoint applies `db/schema.sql` and `db/seed.sql` (both idempotent)
 on every start, so the database is created and upgraded automatically. Then
@@ -68,7 +68,7 @@ To keep data on the host filesystem (e.g. for external backup tools),
 replace the named volume in `docker-compose.yml`:
 
     volumes:
-      - ./data:/var/www/atr/storage
+      - ./data:/var/www/naims/storage
 
 ## Firewall / LAN access
 
@@ -86,13 +86,13 @@ the stock image.
 
 ## Troubleshooting
 
-- **Port already in use** — change `ATR_PORT` in `.env`, then
+- **Port already in use** — change `NAIMS_PORT` in `.env`, then
   `docker compose up -d`.
 - **`app` container restarts in a loop** — `docker compose logs app`. Most
   often Postgres is unreachable (check the `db` container) or the schema
   apply failed (Postgres version mismatch — use Postgres 17).
 - **Model won't load** —
-  `docker compose exec app tail -50 /var/www/atr/storage/logs/llama.log`.
+  `docker compose exec app tail -50 /var/www/naims/storage/logs/llama.log`.
   Usually not enough RAM, or a truncated model file (re-upload).
 - **Slow replies** — expected on CPU with large models; upload a smaller
   model or lower the context length (Assistant tab → Save settings).

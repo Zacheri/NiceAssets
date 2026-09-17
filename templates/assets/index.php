@@ -147,7 +147,7 @@ $f = $filters;
 </div>
 
 <script>
-window.ATR.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
-window.ATR.canModify = <?= $canModify ? 'true' : 'false' ?>;
-window.ATR.isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
+window.NAIMS.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
+window.NAIMS.canModify = <?= $canModify ? 'true' : 'false' ?>;
+window.NAIMS.isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
 </script>

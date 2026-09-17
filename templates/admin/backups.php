@@ -50,7 +50,7 @@
     <h3 class="panel-inline-title">Off-server copy (recommended)</h3>
     <p class="page-sub">
       From a terminal, copy the latest dump off this Mac:
-      <code>scp -r ~/Documents/ATR/storage/backups user@another-machine:~/atr-backups/</code>
+      <code>scp -r ~/Documents/NAIMS/storage/backups user@another-machine:~/naims-backups/</code>
       See docs/OPERATIONS.md for the full backup/restore procedure and secondary-server setup.
     </p>
   </div>

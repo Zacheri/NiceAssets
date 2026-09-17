@@ -1,20 +1,20 @@
 #!/bin/bash
-# ATR Inventory — container entrypoint.
+# Nice Assets — container entrypoint.
 # Runs on every start: sets the timezone, renders config/app.local.php from
 # the environment, waits for Postgres, applies the idempotent schema + seed,
 # handles the first-boot admin password, then starts cron + php-fpm + nginx
 # (nginx in the foreground).
 set -euo pipefail
 
-APP=/var/www/atr
-DB_HOST="${ATR_DB_HOST:-db}"
-DB_PORT="${ATR_DB_PORT:-5432}"
-DB_NAME="${ATR_DB_NAME:-atr}"
-DB_USER="${ATR_DB_USER:-atr}"
-DB_PASS="${ATR_DB_PASS:-atr}"
+APP=/var/www/naims
+DB_HOST="${NAIMS_DB_HOST:-db}"
+DB_PORT="${NAIMS_DB_PORT:-5432}"
+DB_NAME="${NAIMS_DB_NAME:-naims}"
+DB_USER="${NAIMS_DB_USER:-naims}"
+DB_PASS="${NAIMS_DB_PASS:-naims}"
 
 # 0. Timezone (affects cron schedules and system time).
-export TZ="${ATR_TZ:-UTC}"
+export TZ="${NAIMS_TZ:-UTC}"
 if [ -f "/usr/share/zoneinfo/${TZ}" ]; then
   ln -sf "/usr/share/zoneinfo/${TZ}" /etc/localtime
 fi
@@ -24,15 +24,15 @@ fi
 php -r '
 $cfg = [
     "db" => [
-        "host" => getenv("ATR_DB_HOST") ?: "db",
-        "port" => getenv("ATR_DB_PORT") ?: "5432",
-        "name" => getenv("ATR_DB_NAME") ?: "atr",
-        "user" => getenv("ATR_DB_USER") ?: "atr",
-        "pass" => getenv("ATR_DB_PASS") ?: "atr",
+        "host" => getenv("NAIMS_DB_HOST") ?: "db",
+        "port" => getenv("NAIMS_DB_PORT") ?: "5432",
+        "name" => getenv("NAIMS_DB_NAME") ?: "naims",
+        "user" => getenv("NAIMS_DB_USER") ?: "naims",
+        "pass" => getenv("NAIMS_DB_PASS") ?: "naims",
     ],
-    "timezone" => getenv("ATR_TZ") ?: "UTC",
+    "timezone" => getenv("NAIMS_TZ") ?: "UTC",
 ];
-file_put_contents("/var/www/atr/config/app.local.php", "<?php\nreturn " . var_export($cfg, true) . ";\n");
+file_put_contents("/var/www/naims/config/app.local.php", "<?php\nreturn " . var_export($cfg, true) . ";\n");
 '
 
 # 2. Wait for PostgreSQL (up to 60s).
@@ -54,17 +54,17 @@ export PGPASSWORD="$DB_PASS"
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$APP/db/schema.sql"
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$APP/db/seed.sql"
 
-# 4. First boot only: set the admin password once. If ATR_ADMIN_PASS is set
+# 4. First boot only: set the admin password once. If NAIMS_ADMIN_PASS is set
 #    use it; otherwise generate a random one and print it to the logs. The
 #    marker file prevents later boots from clobbering a password the user
 #    changed in the UI.
 if [ ! -f "$APP/storage/.admin_initialized" ]; then
-  if [ -n "${ATR_ADMIN_PASS:-}" ]; then
-    NEWPASS="$ATR_ADMIN_PASS"
-    echo "ATR admin password set from ATR_ADMIN_PASS."
+  if [ -n "${NAIMS_ADMIN_PASS:-}" ]; then
+    NEWPASS="$NAIMS_ADMIN_PASS"
+    echo "NAIMS admin password set from NAIMS_ADMIN_PASS."
   else
     NEWPASS="$(php -r 'echo bin2hex(random_bytes(8));')"
-    echo "ATR admin password: $NEWPASS"
+    echo "NAIMS admin password: $NEWPASS"
   fi
   php "$APP/bin/reset_admin_password.php" admin "$NEWPASS"
   touch "$APP/storage/.admin_initialized"

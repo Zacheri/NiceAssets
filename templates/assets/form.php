@@ -100,6 +100,6 @@ $v = static fn (string $key, $fallback = ''): string => $editing ? (string) ($as
 </form>
 
 <script>
-window.ATR.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
-window.ATR.selectedLocation = <?= (int) $v('location_id') ?>;
+window.NAIMS.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;
+window.NAIMS.selectedLocation = <?= (int) $v('location_id') ?>;
 </script>

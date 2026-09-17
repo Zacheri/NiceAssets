@@ -2,8 +2,8 @@
 
 ## Background jobs
 
-Scheduled by cron inside the app container (`/etc/cron.d/atr`, installed
-from `docker/cron/atr`):
+Scheduled by cron inside the app container (`/etc/cron.d/naims`, installed
+from `docker/cron/naims`):
 
 | Job | Schedule | Command | Log |
 |---|---|---|---|
@@ -13,7 +13,7 @@ from `docker/cron/atr`):
 
 All jobs are idempotent and safe to run by hand:
 
-    docker compose exec app php /var/www/atr/bin/backup.php daily
+    docker compose exec app php /var/www/naims/bin/backup.php daily
 
 ## Backups & restore
 
@@ -32,34 +32,34 @@ up, so make sure no one is working.
 CLI fallback, if the web UI is not usable:
 
     # 1. Find the backup you want
-    docker compose exec app ls -lt /var/www/atr/storage/backups | head
+    docker compose exec app ls -lt /var/www/naims/storage/backups | head
 
     # 2. If the backup includes an uploads archive, extract it (app still up)
-    docker compose exec app tar -xzf /var/www/atr/storage/backups/<uploads-file>.tar.gz \
-      -C /var/www/atr/storage/uploads
+    docker compose exec app tar -xzf /var/www/naims/storage/backups/<uploads-file>.tar.gz \
+      -C /var/www/naims/storage/uploads
 
     # 3. Stop the app so nothing writes during the DB restore
     docker compose stop app
 
     # 4. Copy the dump into the db container (storage volume is only on app)
-    docker compose cp app:/var/www/atr/storage/backups/<dump-file>.dump db:/tmp/restore.dump
+    docker compose cp app:/var/www/naims/storage/backups/<dump-file>.dump db:/tmp/restore.dump
 
     # 5. Restore the database from the db container (fresh public schema, then the dump)
-    docker compose exec -e PGPASSWORD=atr db psql -h 127.0.0.1 -U atr -d atr \
+    docker compose exec -e PGPASSWORD=naims db psql -h 127.0.0.1 -U naims -d naims \
       -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
-    docker compose exec -e PGPASSWORD=atr db pg_restore \
-      -h 127.0.0.1 -U atr -d atr --clean --if-exists /tmp/restore.dump
+    docker compose exec -e PGPASSWORD=naims db pg_restore \
+      -h 127.0.0.1 -U naims -d naims --clean --if-exists /tmp/restore.dump
 
     # 6. Start the app and drop the copied dump
     docker compose start app
     docker compose exec db rm /tmp/restore.dump
 
 Check the actual file names in `storage/backups/` before running Steps
-2–5. If you set `ATR_DB_PASS` in `.env`, use that value for `PGPASSWORD`.
+2–5. If you set `NAIMS_DB_PASS` in `.env`, use that value for `PGPASSWORD`.
 
 ## Logs
 
-All logs live in the `atr_storage` volume under `/var/www/atr/storage/logs/`:
+All logs live in the `naims_storage` volume under `/var/www/naims/storage/logs/`:
 
 | File | Source |
 |---|---|
@@ -69,7 +69,7 @@ All logs live in the `atr_storage` volume under `/var/www/atr/storage/logs/`:
 | `llama.log` | llama-server stdout/stderr |
 | `nginx-access.log`, `nginx-error.log` | nginx |
 
-    docker compose exec app tail -f /var/www/atr/storage/logs/app.log
+    docker compose exec app tail -f /var/www/naims/storage/logs/app.log
 
 ## Health
 
@@ -83,8 +83,8 @@ same endpoint.
 
 | Volume | Container path | Contents |
 |---|---|---|
-| `atr_storage` | `/var/www/atr/storage` | uploads, backups, logs, reports, labels, sessions, models, run |
-| `atr_pgdata` | `/var/lib/postgresql/data` | Postgres data |
+| `naims_storage` | `/var/www/naims/storage` | uploads, backups, logs, reports, labels, sessions, models, run |
+| `naims_pgdata` | `/var/lib/postgresql/data` | Postgres data |
 
 Wipe everything: `docker compose down -v`.
 
@@ -99,6 +99,6 @@ pinned tag in the Dockerfile changes (Docker layer cache).
 
 ## Timezone
 
-Set `ATR_TZ` in `.env` (e.g. `America/New_York`) and `docker compose up -d`.
+Set `NAIMS_TZ` in `.env` (e.g. `America/New_York`) and `docker compose up -d`.
 Cron schedules use the container's local time, which the entrypoint sets
-from `ATR_TZ`.
+from `NAIMS_TZ`.

@@ -25,4 +25,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t atr-inventory:ci .
+        run: docker build -t naims:ci .

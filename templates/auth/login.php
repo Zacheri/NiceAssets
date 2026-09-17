@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in · <?= e($app_name ?? 'ATR Inventory') ?></title>
+<title>Sign in · <?= e($app_name ?? 'Nice Assets') ?></title>
 <link rel="stylesheet" href="<?= e(asset_url('css/app.css')) ?>">
 <link rel="icon" href="<?= e(asset_url('img/favicon.svg')) ?>">
 </head>
@@ -11,8 +11,8 @@
 <div class="auth-wrap">
   <div class="auth-card animate-fadeup">
     <div class="auth-brand">
-      <div class="brand-mark brand-mark-lg">A</div>
-      <h1><?= e($app_name ?? 'ATR Inventory') ?></h1>
+      <div class="brand-mark brand-mark-lg">N</div>
+      <h1><?= e($app_name ?? 'Nice Assets') ?></h1>
       <p>Local network asset tracking</p>
     </div>
     <?php if (!empty($error)): ?>

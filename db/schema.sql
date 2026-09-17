@@ -1,4 +1,4 @@
--- ATR Inventory — PostgreSQL schema
+-- Nice Assets — PostgreSQL schema
 -- Idempotent: safe to re-run on an empty or existing database (CREATE IF NOT EXISTS).
 
 BEGIN;

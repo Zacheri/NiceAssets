@@ -1,9 +1,9 @@
-/* ATR Inventory — frontend behavior */
+/* Nice Assets — frontend behavior */
 (function () {
   'use strict';
 
-  var ATR = window.ATR || (window.ATR = {});
-  var base = ATR.base || '';
+  var NAIMS = window.NAIMS || (window.NAIMS = {});
+  var base = NAIMS.base || '';
 
   /* ---------- sidebar (mobile) ---------- */
   var sidebar = document.getElementById('sidebar');
@@ -58,14 +58,14 @@
   if (!backdrop || !modalForm) return;
 
   function personOptions(selectedId) {
-    var persons = ATR.persons || [];
+    var persons = NAIMS.persons || [];
     return '<option value="">— Select person —</option>' + persons.map(function (p) {
       return '<option value="' + p.id + '"' + (p.id === selectedId ? ' selected' : '') + '>' + esc(p.name) + '</option>';
     }).join('');
   }
 
   function deptOptions(selectedId) {
-    var depts = ATR.departments || [];
+    var depts = NAIMS.departments || [];
     return '<option value="">— Select department —</option>' + depts.map(function (d) {
       return '<option value="' + d.id + '"' + (d.id === selectedId ? ' selected' : '') + '>' + esc(d.name) + '</option>';
     }).join('');
@@ -135,8 +135,8 @@
       title: 'Email asset details',
       submitLabel: 'Send email',
       fields: [
-        { name: 'to', label: 'Recipient *', type: 'email', required: true, value: (ATR.asset && ATR.asset.assignedEmail) || '' },
-        { name: 'subject', label: 'Subject', type: 'text', value: 'Asset ' + ((ATR.asset && ATR.asset.tag) || '') },
+        { name: 'to', label: 'Recipient *', type: 'email', required: true, value: (NAIMS.asset && NAIMS.asset.assignedEmail) || '' },
+        { name: 'subject', label: 'Subject', type: 'text', value: 'Asset ' + ((NAIMS.asset && NAIMS.asset.tag) || '') },
         { name: 'message', label: 'Message (blank = asset summary)', type: 'textarea' }
       ]
     },
@@ -203,7 +203,7 @@
         var token = document.createElement('input');
         token.type = 'hidden';
         token.name = '_token';
-        token.value = ATR.token || '';
+        token.value = NAIMS.token || '';
         form.appendChild(token);
         document.body.appendChild(form);
         form.submit();
@@ -248,7 +248,7 @@
   var picker = document.getElementById('col-picker');
   var grid = document.getElementById('asset-grid');
   if (picker && grid) {
-    var saved = localStorage.getItem('atr_grid_cols');
+    var saved = localStorage.getItem('naims_grid_cols');
     if (saved) {
       grid.style.setProperty('--cols', saved);
       Array.prototype.forEach.call(picker.querySelectorAll('.col-btn'), function (x) {
@@ -267,13 +267,13 @@
       }
       b.addEventListener('click', function () {
         grid.style.setProperty('--cols', n);
-        localStorage.setItem('atr_grid_cols', n);
+        localStorage.setItem('naims_grid_cols', n);
         Array.prototype.forEach.call(picker.querySelectorAll('.col-btn'), function (x) { x.classList.remove('active'); });
         b.classList.add('active');
         var body = new FormData();
         body.append('key', 'grid_cols');
         body.append('value', n);
-        body.append('_token', ATR.token || '');
+        body.append('_token', NAIMS.token || '');
         fetch(base + '/prefs', { method: 'POST', body: body, headers: { 'X-Requested-With': 'fetch' } }).catch(function () {});
       });
     });
@@ -283,26 +283,26 @@
   function bindLocationPair(siteSel, locSel, selectedId) {
     if (!siteSel || !locSel) return;
     function rebuild(preserve) {
-      var data = (ATR.locationsBySite || {})[siteSel.value] || [];
+      var data = (NAIMS.locationsBySite || {})[siteSel.value] || [];
       var prev = preserve !== undefined ? preserve : locSel.value;
       locSel.innerHTML = '<option value="">All</option>' + data.map(function (l) {
         return '<option value="' + l.id + '"' + (String(l.id) === String(prev) ? ' selected' : '') + '>' + esc(l.name) + '</option>';
       }).join('');
     }
-    if (ATR.selectedLocation) {
-      var all = ATR.locationsBySite || {};
+    if (NAIMS.selectedLocation) {
+      var all = NAIMS.locationsBySite || {};
       for (var k in all) {
-        if (all[k].some(function (l) { return String(l.id) === String(ATR.selectedLocation); })) {
+        if (all[k].some(function (l) { return String(l.id) === String(NAIMS.selectedLocation); })) {
           siteSel.value = k;
           break;
         }
       }
     }
     siteSel.addEventListener('change', function () { rebuild(''); });
-    rebuild(ATR.selectedLocation ? String(ATR.selectedLocation) : '');
+    rebuild(NAIMS.selectedLocation ? String(NAIMS.selectedLocation) : '');
   }
   bindLocationPair(document.getElementById('filter-site'), document.getElementById('filter-location'));
-  bindLocationPair(document.getElementById('form-site'), document.getElementById('form-location'), ATR.selectedLocation);
+  bindLocationPair(document.getElementById('form-site'), document.getElementById('form-location'), NAIMS.selectedLocation);
   bindLocationPair(document.getElementById('custom-site'), document.getElementById('custom-location'));
 
   /* ---------- admin user edit form ---------- */
@@ -344,7 +344,7 @@
   }
 
   /* ---------- dashboard charts ---------- */
-  var charts = ATR.charts || null;
+  var charts = NAIMS.charts || null;
   var PALETTE = ['#2563eb', '#38bdf8', '#16a34a', '#d97706', '#7c3aed', '#0d9488', '#db2777', '#64748b'];
 
   function drawBar() {

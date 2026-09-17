@@ -1,6 +1,6 @@
 {
-    "name": "atr/inventory",
-    "description": "ATR local-network inventory management application",
+    "name": "naims/inventory",
+    "description": "Nice Assets local-network inventory management application",
     "type": "project",
     "license": "MIT",
     "require": {

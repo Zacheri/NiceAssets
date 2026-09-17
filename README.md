@@ -1,4 +1,4 @@
-# ATR Inventory
+# Nice Assets
 
 A local-network inventory management web application in the spirit of
 AssetTiger: asset lifecycle tracking (available → checked out → in repair /
@@ -21,20 +21,20 @@ your choice from the Assistant tab.
 
 ## Quickstart
 
-    git clone https://github.com/Zacheri/NiceAssets.git atr && cd atr
+    git clone https://github.com/Zacheri/NiceAssets.git naims && cd naims
     docker compose up --build     # first build compiles llama.cpp (5–15 min)
 
 Wait until `docker compose ps` shows `app` as healthy, then read the
 generated admin password:
 
-    docker compose logs app | grep "ATR admin password"
+    docker compose logs app | grep "NAIMS admin password"
 
 Open http://localhost:8080 and log in as `admin`.
 
 To choose your own admin password on first boot, create a `.env` file (or
 copy `.env.example`):
 
-    ATR_ADMIN_PASS=YourLongPassword
+    NAIMS_ADMIN_PASS=YourLongPassword
 
 ## Using the AI assistant
 
@@ -51,10 +51,10 @@ Nothing leaves your network — the model runs locally in the container.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ATR_PORT` | `8080` | Host port for the web UI |
-| `ATR_DB_PASS` | `atr` | Postgres password (app + db container) |
-| `ATR_ADMIN_PASS` | *(random, printed to logs)* | Admin password on first boot |
-| `ATR_TZ` | `UTC` | Timezone (app + cron schedules) |
+| `NAIMS_PORT` | `8080` | Host port for the web UI |
+| `NAIMS_DB_PASS` | `naims` | Postgres password (app + db container) |
+| `NAIMS_ADMIN_PASS` | *(random, printed to logs)* | Admin password on first boot |
+| `NAIMS_TZ` | `UTC` | Timezone (app + cron schedules) |
 
 See `.env.example` and `docs/INSTALL.md` for the full reference, including
 how to use your own Postgres or bind-mount the data.
@@ -62,8 +62,8 @@ how to use your own Postgres or bind-mount the data.
 ## Data & backups
 
 - App data (uploads, backups, logs, reports, labels, models, sessions) lives
-  in the `atr_storage` Docker volume at `/var/www/atr/storage`.
-- Postgres data lives in the `atr_pgdata` volume.
+  in the `naims_storage` Docker volume at `/var/www/naims/storage`.
+- Postgres data lives in the `naims_pgdata` volume.
 - The app takes a daily backup (DB dump + uploads archive) at 02:00, keeping
   14 days. Restore procedure: `docs/OPERATIONS.md`.
 

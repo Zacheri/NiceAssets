@@ -4,19 +4,19 @@ services:
       context: .
       args:
         LLAMA_CPP_TAG: v0.3.0
-    image: atr-inventory:latest
+    image: naims:latest
     ports:
-      - "${ATR_PORT:-8080}:8080"
+      - "${NAIMS_PORT:-8080}:8080"
     environment:
-      ATR_DB_HOST: db
-      ATR_DB_PORT: "5432"
-      ATR_DB_NAME: atr
-      ATR_DB_USER: atr
-      ATR_DB_PASS: ${ATR_DB_PASS:-atr}
-      ATR_ADMIN_PASS: ${ATR_ADMIN_PASS:-}
-      ATR_TZ: ${ATR_TZ:-UTC}
+      NAIMS_DB_HOST: db
+      NAIMS_DB_PORT: "5432"
+      NAIMS_DB_NAME: naims
+      NAIMS_DB_USER: naims
+      NAIMS_DB_PASS: ${NAIMS_DB_PASS:-naims}
+      NAIMS_ADMIN_PASS: ${NAIMS_ADMIN_PASS:-}
+      NAIMS_TZ: ${NAIMS_TZ:-UTC}
     volumes:
-      - atr_storage:/var/www/atr/storage
+      - naims_storage:/var/www/naims/storage
     depends_on:
       db:
         condition: service_healthy
@@ -25,18 +25,20 @@ services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_DB: atr
-      POSTGRES_USER: atr
-      POSTGRES_PASSWORD: ${ATR_DB_PASS:-atr}
+      POSTGRES_DB: naims
+      POSTGRES_USER: naims
+      POSTGRES_PASSWORD: ${NAIMS_DB_PASS:-naims}
     volumes:
-      - atr_pgdata:/var/lib/postgresql/data
+      - naims_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U atr -d atr"]
+      test: ["CMD-SHELL", "pg_isready -U naims -d naims"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
 volumes:
-  atr_storage:
-  atr_pgdata:
+  naims_storage:
+    name: naims_storage
+  naims_pgdata:
+    name: naims_pgdata

@@ -36,7 +36,7 @@ final class Mailer
 
     private static function buildMessage(string $from, string $fromName, string $toEmail, string $subject, string $html): array
     {
-        $boundary = 'atr_' . bin2hex(random_bytes(8));
+        $boundary = 'naims_' . bin2hex(random_bytes(8));
         $encodedFrom = '=?UTF-8?B?' . base64_encode($fromName) . '?=';
         $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
         $headers = implode("\r\n", [
@@ -51,7 +51,7 @@ final class Mailer
             'Content-Type: text/plain; charset=UTF-8',
             'Content-Transfer-Encoding: base64',
             '',
-            rtrim(chunk_split(base64_encode('ATR Inventory notification: ' . $subject))),
+            rtrim(chunk_split(base64_encode('Nice Assets notification: ' . $subject))),
             '--' . $boundary,
             'Content-Type: text/html; charset=UTF-8',
             'Content-Transfer-Encoding: base64',
@@ -140,12 +140,12 @@ final class Mailer
         }
         return '<!doctype html><html><body style="margin:0;padding:24px;background:#f1f5f9;font-family:system-ui,Arial,sans-serif;color:#0f172a">'
             . '<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">'
-            . '<div style="background:#0f172a;padding:16px 24px"><span style="color:#38bdf8;font-weight:700">ATR Inventory</span></div>'
+            . '<div style="background:#0f172a;padding:16px 24px"><span style="color:#38bdf8;font-weight:700">Nice Assets</span></div>'
             . '<div style="padding:24px">'
             . '<h2 style="margin:0 0 8px;font-size:18px">' . e($title) . '</h2>'
             . '<p style="margin:0 0 16px;color:#475569">' . e($message) . '</p>'
             . ($rows !== '' ? '<table style="width:100%;border-collapse:collapse;font-size:13px">' . $rows . '</table>' : '')
-            . '<p style="margin:20px 0 0"><a href="' . e(url($link)) . '" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Open ATR Inventory</a></p>'
+            . '<p style="margin:20px 0 0"><a href="' . e(url($link)) . '" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Open Nice Assets</a></p>'
             . '</div></div></body></html>';
     }
 }

@@ -7,8 +7,8 @@
 /** @var string $app_version */
 /** @var string $page */
 $nav_active = $page ?? '';
-$atrPersons = empty($user) ? [] : \App\Models\Person::picker();
-$atrDepts = empty($user) ? [] : \App\Models\Department::active();
+$naimsPersons = empty($user) ? [] : \App\Models\Person::picker();
+$naimsDepts = empty($user) ? [] : \App\Models\Department::active();
 $icon = static function (string $paths): string {
     return '<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . $paths . '</svg>';
 };
@@ -22,11 +22,11 @@ $icon = static function (string $paths): string {
 <link rel="stylesheet" href="<?= e(asset_url('css/app.css')) ?>">
 <link rel="icon" href="<?= e(asset_url('img/favicon.svg')) ?>">
 <script>
-window.ATR = {
+window.NAIMS = {
   token: '<?= e(\App\Core\CSRF::token()) ?>',
   base: '<?= e(url('')) ?>',
-  persons: <?= json_encode(array_map(static fn ($p) => ['id' => (int) $p['id'], 'name' => $p['full_name']], $atrPersons), JSON_UNESCAPED_SLASHES) ?>,
-  departments: <?= json_encode(array_map(static fn ($d) => ['id' => (int) $d['id'], 'name' => $d['name']], $atrDepts), JSON_UNESCAPED_SLASHES) ?>
+  persons: <?= json_encode(array_map(static fn ($p) => ['id' => (int) $p['id'], 'name' => $p['full_name']], $naimsPersons), JSON_UNESCAPED_SLASHES) ?>,
+  departments: <?= json_encode(array_map(static fn ($d) => ['id' => (int) $d['id'], 'name' => $d['name']], $naimsDepts), JSON_UNESCAPED_SLASHES) ?>
 };
 </script>
 </head>
@@ -34,7 +34,7 @@ window.ATR = {
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">A</div>
+      <div class="brand-mark">N</div>
       <div>
         <div class="brand-name"><?= e($app_name) ?></div>
         <div class="brand-sub">v<?= e($app_version) ?></div>

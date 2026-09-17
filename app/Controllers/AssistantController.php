@@ -142,7 +142,7 @@ class AssistantController
         if (($user['role_name'] ?? '') === 'viewer') {
             $scope = ' You are a viewer: read-only. Never attempt action tools.';
         }
-        return 'You are the assistant of ATR Inventory, a local asset-management app (assets have tags like 00001; '
+        return 'You are the assistant of Nice Assets, a local asset-management app (assets have tags like 00001; '
             . 'statuses: available, checked_out, in_repair, broken, lost, disposed, sold, donated). '
             . 'Current user: ' . ($user['full_name'] ?? '') . ' (role: ' . ($user['role_name'] ?? '') . '). '
             . $scope . ' '

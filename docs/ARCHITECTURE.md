@@ -1,6 +1,6 @@
 # Architecture & Extension Guide
 
-How ATR is put together, and how to add features with confidence (this file is
+How Nice Assets is put together, and how to add features with confidence (this file is
 written to be fed to an AI coding assistant or read by a new developer).
 
 ## Request lifecycle
@@ -88,7 +88,7 @@ There is **no framework**. Dependencies are only:
   (fast keystrokes + Enter outside any input → `/assets?q=…`).
 - The modal field definitions live in `ACTIONS` in app.js — keep them in sync
   with the fields the controller reads (`Request::post(...)`).
-- `window.ATR` (set in `templates/layout.php`, in `<head>` so page scripts can
+- `window.NAIMS` (set in `templates/layout.php`, in `<head>` so page scripts can
   extend it) carries `token`, `persons`, `departments`, and page-specific data
   (`locationsBySite`, `charts`, `asset`).
 
@@ -111,7 +111,7 @@ There is **no framework**. Dependencies are only:
 
 All jobs bootstrap via `bin/_bootstrap.php` and log to `storage/logs/`.
 They are idempotent and safe to run by hand. In Docker they are scheduled by
-cron (`/etc/cron.d/atr`, installed from `docker/cron/atr`): daily backup
+cron (`/etc/cron.d/naims`, installed from `docker/cron/naims`): daily backup
 02:00, weekly report Saturday 18:00, alert sweep every 15 minutes.
 
 ## Configuration precedence

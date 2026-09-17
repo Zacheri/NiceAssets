@@ -1,10 +1,10 @@
-/* ATR Assistant — chat behavior */
+/* Nice Assets Assistant — chat behavior */
 (function () {
   'use strict';
 
-  var ATR = window.ATR || {};
-  var base = ATR.base || '';
-  var token = ATR.token || '';
+  var NAIMS = window.NAIMS || {};
+  var base = NAIMS.base || '';
+  var token = NAIMS.token || '';
 
   var stateEl = document.getElementById('assistant-state');
   var messagesEl = document.getElementById('assistant-messages');
@@ -14,7 +14,7 @@
   var modelFile = document.getElementById('model-file');
   if (!stateEl || !messagesEl || !inputEl || !sendEl) return;
 
-  var LS_KEY = 'atr_assistant_history';
+  var LS_KEY = 'naims_assistant_history';
   var busy = false;
 
   function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }

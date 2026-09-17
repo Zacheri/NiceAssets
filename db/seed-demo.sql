@@ -1,5 +1,5 @@
--- ATR Inventory — DEMO/sample data (opt-in, evaluation only)
--- Loaded only when the installer is told to (ATR_SEED=1 or interactive "yes").
+-- Nice Assets — DEMO/sample data (opt-in, evaluation only)
+-- Loaded only when the installer is told to (NAIMS_SEED=1 or interactive "yes").
 -- Requires the base seed (db/seed.sql: roles + users) to be loaded first.
 -- Do NOT use this file for a production deployment.
 

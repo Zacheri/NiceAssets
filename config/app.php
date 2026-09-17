@@ -5,19 +5,19 @@ declare(strict_types=1);
 $local = __DIR__ . '/app.local.php';
 $base = [
     'app_version' => '1.0.0',
-    'app_name' => 'ATR Inventory',
+    'app_name' => 'Nice Assets',
     'base_url' => '',
     'timezone' => 'America/New_York',
     'db' => [
         'host' => '127.0.0.1',
         'port' => '5432',
-        'name' => 'atr',
-        'user' => 'atr',
-        'pass' => 'atr',
+        'name' => 'naims',
+        'user' => 'naims',
+        'pass' => 'naims',
     ],
     'session' => [
         'path' => dirname(__DIR__) . '/storage/sessions',
-        'name' => 'atr_session',
+        'name' => 'naims_session',
         'cookie_lifetime' => 43200,
     ],
     'storage' => [
@@ -29,8 +29,8 @@ $base = [
         'labels' => dirname(__DIR__) . '/storage/labels',
     ],
     'mail' => [
-        'from' => 'atr-inventory@localhost',
-        'from_name' => 'ATR Inventory',
+        'from' => 'naims@localhost',
+        'from_name' => 'Nice Assets',
         'smtp_host' => '',
         'smtp_port' => 587,
         'smtp_user' => '',

@@ -27,7 +27,7 @@ foreach ($samples as [$name, $variety, $rgb]) {
     $light = imagecolorallocate($img, min(255, $rgb[0] + 40), min(255, $rgb[1] + 40), min(255, $rgb[2] + 40));
     imagefill($img, 0, 0, $base);
     imagerectangle($img, 20, 20, 300, 180, $light);
-    imagestring($img, 5, 90, 95, 'ATR sample', $light);
+    imagestring($img, 5, 90, 95, 'NAIMS sample', $light);
     $file = $dir . '/' . date('Ymd_His') . '_' . md5($name) . '.png';
     imagepng($img, $file);
     $filename = basename($file);
