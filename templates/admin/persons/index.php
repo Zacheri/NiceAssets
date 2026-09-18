@@ -14,14 +14,15 @@
 <div class="asset-grid" style="--cols: 3">
   <?php foreach ($persons as $p): ?>
     <div class="asset-card animate-fadeup <?= $p['is_terminated'] ? 'card-terminated' : '' ?>">
+      <a class="card-stretch" href="<?= e(url('/admin/persons/' . (int) $p['id'])) ?>" aria-label="View <?= e($p['full_name']) ?> and their checked-out assets"></a>
       <div class="card-body person-card-body">
         <div class="person-head">
           <span class="avatar avatar-lg"><?= e(strtoupper(substr((string) $p['full_name'], 0, 1))) ?></span>
           <div class="person-id">
-            <a class="card-tag" href="<?= e(url('/admin/persons/' . (int) $p['id'] . '/edit')) ?>"><?= e($p['full_name']) ?></a>
+            <span class="card-tag"><?= e($p['full_name']) ?></span>
             <div class="card-model"><?= e($p['job_title']) !== '' ? e($p['job_title']) : '—' ?></div>
           </div>
-          <?php if ($p['is_terminated']): ?><span class="status-badge badge-red">Terminated</span><?php endif; ?>
+          <span class="status-badge <?= $p['is_terminated'] ? 'badge-red' : 'badge-green' ?>"><?= $p['is_terminated'] ? 'Terminated' : 'Active' ?></span>
         </div>
         <div class="card-meta">
           <span><?= e($p['department_name'] ?? '') !== '' ? e($p['department_name']) : 'No department' ?></span>
@@ -44,9 +45,9 @@
         <form method="post" action="<?= e(url('/admin/persons/' . (int) $p['id'] . '/toggle')) ?>" class="inline-form">
           <?= csrf_field() ?>
           <label class="switch-label">
+            <span>Terminate?:</span>
             <input class="switch" type="checkbox" value="1" <?= $p['is_terminated'] ? 'checked' : '' ?>
                    onchange="this.form.requestSubmit()">
-            <span><?= $p['is_terminated'] ? 'Terminated' : 'Active' ?></span>
           </label>
         </form>
         <span class="spacer"></span>

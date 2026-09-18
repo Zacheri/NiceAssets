@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Models\Asset;
 use App\Models\Department;
 use App\Models\Person;
 use RuntimeException;
@@ -20,6 +21,21 @@ class PersonController
         View::output(View::render('admin/persons/index', [
             'title' => 'Persons',
             'persons' => Person::all(),
+        ]));
+    }
+
+    public function show(string $id): void
+    {
+        $user = Auth::requireLogin();
+        $person = Person::find((int) $id);
+        if ($person === null) {
+            Response::notFound('Person not found.');
+        }
+        $result = Asset::search(['assigned_person_id' => (int) $id, 'status' => 'checked_out'], 1, 500, $user);
+        View::output(View::render('admin/persons/show', [
+            'title' => $person['full_name'],
+            'person' => $person,
+            'assets' => $result['rows'],
         ]));
     }
 

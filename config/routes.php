@@ -72,6 +72,7 @@ return [
     ['method' => 'POST', 'path' => '/admin/users/{id}/delete',   'controller' => 'Admin', 'action' => 'userDelete',    'roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/persons',             'controller' => 'Person', 'action' => 'index',        'roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/persons/new',         'controller' => 'Person', 'action' => 'create',       'roles' => ['admin']],
+    ['method' => 'GET',  'path' => '/admin/persons/{id}',        'controller' => 'Person', 'action' => 'show',         'roles' => ['admin']],
     ['method' => 'POST', 'path' => '/admin/persons',             'controller' => 'Person', 'action' => 'store',        'roles' => ['admin']],
     ['method' => 'GET',  'path' => '/admin/persons/{id}/edit',   'controller' => 'Person', 'action' => 'edit',         'roles' => ['admin']],
     ['method' => 'POST', 'path' => '/admin/persons/{id}',        'controller' => 'Person', 'action' => 'update',       'roles' => ['admin']],
