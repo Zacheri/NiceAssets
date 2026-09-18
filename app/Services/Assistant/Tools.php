@@ -26,7 +26,7 @@ final class Tools
     public static function definitions(): array
     {
         $obj = static fn (array $props, array $required = []): array => [
-            'type' => 'object', 'properties' => $props, 'required' => $required,
+            'type' => 'object', 'properties' => (object) $props, 'required' => $required,
         ];
         $str = static fn (): array => ['type' => 'string'];
         $int = static fn (): array => ['type' => 'integer'];
