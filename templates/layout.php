@@ -110,10 +110,37 @@ window.NAIMS = {
         <input type="search" name="q" placeholder="Search assets — tag, serial, brand… (scanner ready)"
                value="<?= e($_GET['q'] ?? '') ?>" autocomplete="off">
       </form>
-      <a href="<?= e(url('/')) ?>" class="bell" title="Dashboard alerts">
-        <?= $icon('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 0 0 4 0"/>') ?>
-        <?php if (!empty($important_count)): ?><span class="bell-dot"><?= (int) $important_count ?></span><?php endif; ?>
-      </a>
+      <?php if (!empty($user)): ?>
+        <div class="dropdown bell-dd">
+          <button class="bell dropdown-toggle" type="button" aria-label="Alerts" title="Alerts">
+            <?= $icon('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 0 0 4 0"/>') ?>
+            <?php if (!empty($important_count)): ?><span class="bell-dot"><?= (int) $important_count ?></span><?php endif; ?>
+          </button>
+          <div class="dropdown-menu alerts-menu">
+            <div class="alerts-menu-head">
+              <strong>Alerts</strong>
+              <span class="badge badge-red" data-if-count><?= (int) $important_count ?> important</span>
+            </div>
+            <div class="alerts-list">
+              <?php if ($alerts === []): ?>
+                <div class="empty">No active alerts. All clear.</div>
+              <?php else: ?>
+                <?php foreach (array_slice($alerts, 0, 12) as $alert): ?>
+                  <a class="alert-item <?= $alert['severity'] === 'important' ? 'alert-important' : 'alert-info' ?>"
+                     href="<?= e(url($alert['link'])) ?>">
+                    <span class="alert-dot"></span>
+                    <span class="alert-text">
+                      <strong><?= e($alert['title']) ?></strong>
+                      <small><?= e($alert['message']) ?></small>
+                    </span>
+                    <span class="alert-tag"><?= e(ucfirst(str_replace('_', ' ', $alert['type']))) ?></span>
+                  </a>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
       <div class="user-chip" title="<?= e($user['full_name'] ?? '') ?> · <?= e($user['role_name'] ?? '') ?>">
         <span class="avatar"><?= e(strtoupper(substr((string) ($user['full_name'] ?? 'U'), 0, 1))) ?></span>
         <span class="user-meta">

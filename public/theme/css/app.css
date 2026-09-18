@@ -277,6 +277,10 @@ h1, h2, h3 { margin: 0; }
 .dropdown-item:hover { background: var(--bg); color: var(--ink); }
 .dropdown-item.danger { color: var(--red); }
 .dropdown-item.danger:hover { background: var(--red-bg); }
+.bell.dropdown-toggle { background: none; border: none; cursor: pointer; padding: 4px; }
+.alerts-menu { width: 400px; max-width: calc(100vw - 32px); padding: 0; overflow: hidden; }
+.alerts-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.alerts-menu .alerts-list { max-height: 420px; overflow-y: auto; padding: 6px; }
 
 /* ---------- forms ---------- */
 .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
