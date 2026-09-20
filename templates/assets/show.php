@@ -66,17 +66,22 @@ $available = $asset['status'] === 'available';
           <div class="empty">No photos linked yet. <a href="<?= e(url('/photos')) ?>">Add one from the gallery</a>.</div>
         <?php endif; ?>
         <?php if ($canModify): ?>
-          <form method="post" action="<?= e(url('/assets/' . (int) $asset['id'] . '/photos/assign')) ?>" class="assign-photo">
-            <?= csrf_field() ?>
-            <span>Link a gallery photo:</span>
-            <select class="input" name="photo_id" required>
-              <option value="">Choose…</option>
-              <?php foreach (\App\Models\Photo::all() as $p): ?>
-                <option value="<?= (int) $p['id'] ?>"><?= e($p['original_name']) ?><?= $p['variety'] ? ' — ' . e($p['variety']) : '' ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button class="btn btn-sm">Link</button>
-          </form>
+          <div class="assign-photo">
+            <button class="btn btn-sm" type="button" data-pp-open="pp-asset-link">Link photo</button>
+          </div>
+          <?= \App\Core\View::partial('photo_picker_modal', [
+              'slug' => 'asset-link',
+              'title' => 'Link a gallery photo',
+              'photos' => $galleryPhotos,
+              'mode' => 'single',
+              'name' => 'photo_id',
+              'selectedIds' => [],
+              'confirm' => 'post',
+              'formAction' => url('/assets/' . (int) $asset['id'] . '/photos/assign'),
+              'redirect' => url('/assets/' . (int) $asset['id']),
+              'buttonLabel' => 'Link',
+              'emptyLink' => '/photos',
+          ]) ?>
         <?php endif; ?>
       </div>
     </section>

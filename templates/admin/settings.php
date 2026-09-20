@@ -1,5 +1,7 @@
 <?php
 /** @var array $settings */
+/** @var ?array $logoPhoto */
+/** @var array $logoPhotos */
 ?>
 <div class="page-head animate-fadeup">
   <div>
@@ -8,7 +10,7 @@
   </div>
 </div>
 
-<form method="post" action="<?= e(url('/admin/settings')) ?>" class="panel animate-fadeup form-panel" style="animation-delay:.05s">
+<form method="post" name="settings-form" action="<?= e(url('/admin/settings')) ?>" class="panel animate-fadeup form-panel" style="animation-delay:.05s">
   <?= csrf_field() ?>
   <h2 class="section-title">Email delivery</h2>
   <div class="form-grid">
@@ -57,7 +59,41 @@
     </label>
   </div>
 
+  <h2 class="section-title">Branding</h2>
+  <div class="branding-row">
+    <div class="pp-current pp-current-square <?= $logoPhoto !== null ? 'is-set' : '' ?>" id="logo-current">
+      <span class="pp-current-letter">N</span>
+      <img src="<?= $logoPhoto !== null ? e(url('/uploads/' . rawurlencode((string) $logoPhoto['filename']))) : e(asset_url('img/placeholder.svg')) ?>" alt=""
+           onerror="this.src='<?= e(asset_url('img/placeholder.svg')) ?>'">
+    </div>
+    <div class="branding-actions">
+      <span class="pp-current-name"><?= $logoPhoto !== null ? e($logoPhoto['original_name']) : 'No logo set — the “N” mark is shown.' ?></span>
+      <div class="pp-current-btns">
+        <button class="btn btn-sm" type="button" data-pp-open="pp-logo">Choose logo</button>
+        <?php if ($logoPhoto !== null): ?>
+          <button class="btn btn-sm btn-ghost" type="button" data-pp-clear="logo_photo_id" data-pp-preview="logo-current">Remove logo</button>
+        <?php endif; ?>
+      </div>
+      <span class="page-sub">Shown in the sidebar and on the sign-in page. Choose from the asset photo gallery.</span>
+    </div>
+  </div>
+  <input type="hidden" name="logo_photo_id" value="<?= (int) ($logoPhoto['id'] ?? 0) ?>" data-pp-hidden>
+
   <div class="form-foot">
     <button type="submit" class="btn btn-primary">Save settings</button>
   </div>
 </form>
+
+<?= \App\Core\View::partial('photo_picker_modal', [
+    'slug' => 'logo',
+    'title' => 'Choose a logo',
+    'photos' => $logoPhotos,
+    'mode' => 'single',
+    'name' => 'logo_photo_id',
+    'selectedIds' => $logoPhoto !== null ? [(int) $logoPhoto['id']] : [],
+    'confirm' => 'submit-form',
+    'targetForm' => 'settings-form',
+    'buttonLabel' => 'Set logo',
+    'preview' => 'logo-current',
+    'emptyLink' => '/photos',
+]) ?>

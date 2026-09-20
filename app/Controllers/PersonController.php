@@ -11,6 +11,7 @@ use App\Core\View;
 use App\Models\Asset;
 use App\Models\Department;
 use App\Models\Person;
+use App\Models\Photo;
 use RuntimeException;
 
 class PersonController
@@ -110,6 +111,7 @@ class PersonController
             'title' => $title,
             'person' => $person,
             'departments' => Department::all(),
+            'portraitPhotos' => Photo::all('portrait'),
         ]));
     }
 }

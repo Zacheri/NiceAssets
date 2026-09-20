@@ -13,10 +13,13 @@ final class Person
     {
         return Database::fetchAll(
             'SELECT p.*, d.name AS department_name,
+                    pp.filename AS portrait_filename, pp.original_name AS portrait_name,
                     (SELECT COUNT(*) FROM assets a
                      WHERE a.assigned_to_person_id = p.id AND a.status = \'checked_out\')::int AS checked_out_count
-             FROM persons p LEFT JOIN departments d ON d.id = p.department_id
-             ORDER BY p.is_terminated ASC, p.full_name'
+              FROM persons p
+              LEFT JOIN departments d ON d.id = p.department_id
+              LEFT JOIN photos pp ON pp.id = p.portrait_photo_id
+              ORDER BY p.is_terminated ASC, p.full_name'
         );
     }
 
@@ -30,9 +33,12 @@ final class Person
     public static function find(int $id): ?array
     {
         return Database::fetchOne(
-            'SELECT p.*, d.name AS department_name
-             FROM persons p LEFT JOIN departments d ON d.id = p.department_id
-             WHERE p.id = :id',
+            'SELECT p.*, d.name AS department_name,
+                    pp.filename AS portrait_filename, pp.original_name AS portrait_name
+              FROM persons p
+              LEFT JOIN departments d ON d.id = p.department_id
+              LEFT JOIN photos pp ON pp.id = p.portrait_photo_id
+              WHERE p.id = :id',
             ['id' => $id]
         );
     }
@@ -43,8 +49,8 @@ final class Person
             throw new RuntimeException('Full name is required.');
         }
         $id = Database::insert(
-            'INSERT INTO persons (full_name, job_title, personal_email, work_email, phone, address, department_id, notes, is_terminated)
-             VALUES (:n, :jt, :pe, :we, :ph, :ad, :dep, :notes, :term)',
+            'INSERT INTO persons (full_name, job_title, personal_email, work_email, phone, address, department_id, portrait_photo_id, notes, is_terminated)
+             VALUES (:n, :jt, :pe, :we, :ph, :ad, :dep, :port, :notes, :term)',
             self::params($d)
         );
         Audit::log('person.create', 'person', (string) $id, ['full_name' => trim($d['full_name'])]);
@@ -62,8 +68,8 @@ final class Person
         }
         Database::execute(
             'UPDATE persons SET full_name = :n, job_title = :jt, personal_email = :pe, work_email = :we,
-             phone = :ph, address = :ad, department_id = :dep, notes = :notes, is_terminated = :term,
-             updated_at = now() WHERE id = :id',
+             phone = :ph, address = :ad, department_id = :dep, portrait_photo_id = :port, notes = :notes,
+             is_terminated = :term, updated_at = now() WHERE id = :id',
             array_merge(self::params($d), ['id' => $id])
         );
         Audit::log('person.update', 'person', (string) $id, ['full_name' => trim($d['full_name'])]);
@@ -109,8 +115,22 @@ final class Person
             'ph' => trim($d['phone'] ?? ''),
             'ad' => trim($d['address'] ?? ''),
             'dep' => !empty($d['department_id']) ? (int) $d['department_id'] : null,
+            'port' => self::portraitPhotoId($d['portrait_photo_id'] ?? null),
             'notes' => trim($d['notes'] ?? ''),
             'term' => !empty($d['is_terminated']) ? 1 : 0,
         ];
+    }
+
+    private static function portraitPhotoId(mixed $value): ?int
+    {
+        $id = (int) $value;
+        if ($id <= 0) {
+            return null;
+        }
+        $photo = Photo::find($id);
+        if ($photo === null || $photo['kind'] !== 'portrait') {
+            return null;
+        }
+        return $id;
     }
 }

@@ -17,7 +17,12 @@
       <a class="card-stretch" href="<?= e(url('/admin/persons/' . (int) $p['id'])) ?>" aria-label="View <?= e($p['full_name']) ?> and their checked-out assets"></a>
       <div class="card-body person-card-body">
         <div class="person-head">
-          <span class="avatar avatar-lg"><?= e(strtoupper(substr((string) $p['full_name'], 0, 1))) ?></span>
+          <?php if (!empty($p['portrait_filename'])): ?>
+            <img class="avatar avatar-lg" src="<?= e(url('/uploads/' . rawurlencode((string) $p['portrait_filename']))) ?>" alt=""
+                 onerror="this.outerHTML='<span class=&quot;avatar avatar-lg&quot;><?= e(strtoupper(substr((string) $p['full_name'], 0, 1))) ?></span>'">
+          <?php else: ?>
+            <span class="avatar avatar-lg"><?= e(strtoupper(substr((string) $p['full_name'], 0, 1))) ?></span>
+          <?php endif; ?>
           <div class="person-id">
             <span class="card-tag"><?= e($p['full_name']) ?></span>
             <div class="card-model"><?= e($p['job_title']) !== '' ? e($p['job_title']) : '—' ?></div>

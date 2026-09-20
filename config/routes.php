@@ -34,6 +34,7 @@ return [
 
     // Photos
     ['method' => 'GET',  'path' => '/photos',                    'controller' => 'Photo',   'action' => 'index'],
+    ['method' => 'GET',  'path' => '/photos/portraits',          'controller' => 'Photo',   'action' => 'index'],
     ['method' => 'POST', 'path' => '/photos/upload',             'controller' => 'Photo',   'action' => 'upload',  'roles' => ['admin', 'department_manager']],
     ['method' => 'POST', 'path' => '/photos/{id}/delete',        'controller' => 'Photo',   'action' => 'delete',  'roles' => ['admin']],
     ['method' => 'POST', 'path' => '/assets/{id}/photos/assign',  'controller' => 'Asset',   'action' => 'assignPhoto',  'roles' => ['admin', 'department_manager']],

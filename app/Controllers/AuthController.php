@@ -9,6 +9,8 @@ use App\Core\Config;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Models\Photo;
+use App\Models\Setting;
 
 class AuthController
 {
@@ -17,9 +19,11 @@ class AuthController
         if (Auth::user() !== null) {
             Response::redirect('/');
         }
+        $logoId = (string) Setting::get('brand.logo_photo_id', '');
         View::output(View::render('auth/login', [
             'title' => 'Sign in',
             'error' => $_SESSION['flash']['error'] ?? null,
+            'logo_photo' => $logoId !== '' ? Photo::find((int) $logoId) : null,
         ], false));
     }
 

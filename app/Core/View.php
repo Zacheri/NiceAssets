@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Models\Photo;
+use App\Models\Setting;
 use App\Services\AlertEngine;
 
 final class View
@@ -25,6 +27,8 @@ final class View
         $data['app_name'] = Config::get('app_name');
         $data['app_version'] = Config::get('app_version');
         $data['page'] = $template;
+        $logoId = (string) Setting::get('brand.logo_photo_id', '');
+        $data['logo_photo'] = $logoId !== '' ? Photo::find((int) $logoId) : null;
         if ($data['user'] !== null) {
             if (!isset($data['alerts'])) {
                 $data['alerts'] = AlertEngine::dashboard($data['user']);
@@ -39,11 +43,11 @@ final class View
         return ob_get_clean();
     }
 
-    public static function partial(string $name, array $data = []): string
+    public static function partial(string $partial, array $data = []): string
     {
         ob_start();
         extract($data, EXTR_SKIP);
-        include BASE_PATH . '/templates/partials/' . $name . '.php';
+        include BASE_PATH . '/templates/partials/' . $partial . '.php';
         return ob_get_clean();
     }
 

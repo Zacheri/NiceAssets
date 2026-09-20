@@ -6,7 +6,8 @@
 /** @var string $app_name */
 /** @var string $app_version */
 /** @var string $page */
-$nav_active = $page ?? '';
+/** @var ?array $logo_photo */
+$nav_active = $nav ?? $page ?? '';
 $naimsPersons = empty($user) ? [] : \App\Models\Person::picker();
 $naimsDepts = empty($user) ? [] : \App\Models\Department::active();
 $icon = static function (string $paths): string {
@@ -34,7 +35,12 @@ window.NAIMS = {
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-mark">N</div>
+      <?php if (!empty($logo_photo['filename'])): ?>
+        <img class="brand-mark" src="<?= e(url('/uploads/' . rawurlencode((string) $logo_photo['filename']))) ?>" alt=""
+             onerror="this.outerHTML='<div class=&quot;brand-mark&quot;>N</div>'">
+      <?php else: ?>
+        <div class="brand-mark">N</div>
+      <?php endif; ?>
       <div>
         <div class="brand-name"><?= e($app_name) ?></div>
         <div class="brand-sub">v<?= e($app_version) ?></div>
@@ -50,8 +56,11 @@ window.NAIMS = {
       <a href="<?= e(url('/work-orders')) ?>" class="<?= str_starts_with($nav_active, 'work_orders') ? 'active' : '' ?>">
         <?= $icon('<path d="M14.7 6.3a4.5 4.5 0 0 0-6 5.6L3 17.6V21h3.4l5.7-5.7a4.5 4.5 0 0 0 5.6-6L14.6 12l-2.6-2.6 2.7-3.1z"/>') ?> Work Orders
       </a>
-      <a href="<?= e(url('/photos')) ?>" class="<?= str_starts_with($nav_active, 'photos') ? 'active' : '' ?>">
+      <a href="<?= e(url('/photos')) ?>" class="<?= $nav_active === 'photos' ? 'active' : '' ?>">
         <?= $icon('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-9 9"/>') ?> Photos
+      </a>
+      <a href="<?= e(url('/photos/portraits')) ?>" class="<?= $nav_active === 'photos/portraits' ? 'active' : '' ?>">
+        <?= $icon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>') ?> Portraits
       </a>
       <a href="<?= e(url('/reports')) ?>" class="<?= str_starts_with($nav_active, 'reports') ? 'active' : '' ?>">
         <?= $icon('<path d="M5 20V12M11 20V5M17 20v-6M3 20h18"/>') ?> Reports
@@ -182,5 +191,6 @@ window.NAIMS = {
 </div>
 
 <script src="<?= e(asset_url('js/app.js')) ?>"></script>
+<script src="<?= e(asset_url('js/photo-picker.js')) ?>"></script>
 </body>
 </html>

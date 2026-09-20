@@ -20,6 +20,13 @@ $terminated = !empty($person['is_terminated']);
 <section class="panel animate-fadeup" style="animation-delay:.05s">
   <div class="panel-head"><h2>Details</h2></div>
   <div class="panel-body">
+    <?php if (!empty($person['portrait_filename'])): ?>
+      <div class="person-portrait">
+        <img src="<?= e(url('/uploads/' . rawurlencode((string) $person['portrait_filename']))) ?>" alt=""
+             onerror="this.src='<?= e(asset_url('img/placeholder.svg')) ?>'">
+        <span class="person-portrait-name"><?= e($person['portrait_name'] ?? '') ?></span>
+      </div>
+    <?php endif; ?>
     <div class="person-contacts">
       <div><span class="pc-label">Job title</span><?= e($person['job_title'] !== '' ? $person['job_title'] : '—') ?></div>
       <div><span class="pc-label">Department</span><?= e($person['department_name'] ?? '') !== '' ? e($person['department_name']) : 'No department' ?></div>

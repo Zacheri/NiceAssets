@@ -1,7 +1,9 @@
 <?php
 /** @var ?array $person */
 /** @var array $departments */
+/** @var array $portraitPhotos */
 $isEdit = $person !== null;
+$hasPortrait = !empty($person['portrait_filename']);
 $v = static function (string $k) use ($person): string {
     return (string) ($person[$k] ?? '');
 };
@@ -13,7 +15,7 @@ $v = static function (string $k) use ($person): string {
   </div>
 </div>
 
-<form method="post" action="<?= e(url($isEdit ? '/admin/persons/' . (int) $person['id'] : '/admin/persons')) ?>" class="panel form-panel animate-fadeup">
+<form method="post" name="person-form" action="<?= e(url($isEdit ? '/admin/persons/' . (int) $person['id'] : '/admin/persons')) ?>" class="panel form-panel animate-fadeup">
   <?= csrf_field() ?>
   <div class="form-grid">
     <label class="field"><span>Full name *</span>
@@ -50,8 +52,46 @@ $v = static function (string $k) use ($person): string {
       <span>Terminated</span>
     </label>
   </div>
+
+  <div class="photo-picker-block">
+    <div class="photo-picker-head">
+      <h3>Portrait</h3>
+      <span class="page-sub">Profile photo shown on the person's card and detail page. Portraits are uploaded in the Portraits gallery.</span>
+    </div>
+    <div class="pp-current-row">
+      <div class="pp-current <?= $hasPortrait ? 'is-set' : '' ?>" id="portrait-current">
+        <span class="pp-current-letter"><?= e(strtoupper(substr((string) ($person['full_name'] ?? 'P'), 0, 1))) ?></span>
+        <img src="<?= $hasPortrait ? e(url('/uploads/' . rawurlencode((string) $person['portrait_filename']))) : e(asset_url('img/placeholder.svg')) ?>" alt=""
+             onerror="this.src='<?= e(asset_url('img/placeholder.svg')) ?>'">
+      </div>
+      <div class="pp-current-meta">
+        <span class="pp-current-name"><?= $hasPortrait ? e($person['portrait_name'] ?? '') : 'No portrait set' ?></span>
+        <div class="pp-current-btns">
+          <button class="btn btn-sm" type="button" data-pp-open="pp-person-portrait">Choose portrait</button>
+          <?php if (!empty($person['portrait_photo_id'])): ?>
+            <button class="btn btn-sm btn-ghost" type="button" data-pp-clear="person[portrait_photo_id]" data-pp-preview="portrait-current">Remove portrait</button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" name="person[portrait_photo_id]" value="<?= (int) ($person['portrait_photo_id'] ?? 0) ?>" data-pp-hidden>
+  </div>
   <div class="form-foot">
     <button class="btn btn-primary"><?= $isEdit ? 'Save changes' : 'Create person' ?></button>
     <a class="btn btn-ghost" href="<?= e(url('/admin/persons')) ?>">Cancel</a>
   </div>
 </form>
+
+<?= \App\Core\View::partial('photo_picker_modal', [
+    'slug' => 'person-portrait',
+    'title' => 'Choose a portrait',
+    'photos' => $portraitPhotos,
+    'mode' => 'single',
+    'name' => 'person[portrait_photo_id]',
+    'selectedIds' => !empty($person['portrait_photo_id']) ? [(int) $person['portrait_photo_id']] : [],
+    'confirm' => 'submit-form',
+    'targetForm' => 'person-form',
+    'buttonLabel' => 'Set portrait',
+    'preview' => 'portrait-current',
+    'emptyLink' => '/photos/portraits',
+]) ?>

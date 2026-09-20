@@ -11,7 +11,12 @@
 <div class="auth-wrap">
   <div class="auth-card animate-fadeup">
     <div class="auth-brand">
-      <div class="brand-mark brand-mark-lg">N</div>
+      <?php if (!empty($logo_photo['filename'])): ?>
+        <img class="brand-mark brand-mark-lg" src="<?= e(url('/uploads/' . rawurlencode((string) $logo_photo['filename']))) ?>" alt=""
+             onerror="this.outerHTML='<div class=&quot;brand-mark brand-mark-lg&quot;>N</div>'">
+      <?php else: ?>
+        <div class="brand-mark brand-mark-lg">N</div>
+      <?php endif; ?>
       <h1><?= e($app_name ?? 'Nice Assets') ?></h1>
       <p>Local network asset tracking</p>
     </div>

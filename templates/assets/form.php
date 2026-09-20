@@ -12,7 +12,7 @@ $v = static fn (string $key, $fallback = ''): string => $editing ? (string) ($as
   </div>
 </div>
 
-<form method="post" action="<?= $editing ? e(url('/assets/' . (int) $asset['id'])) : e(url('/assets')) ?>" class="panel animate-fadeup form-panel" style="animation-delay:.05s">
+<form method="post" name="asset-form" action="<?= $editing ? e(url('/assets/' . (int) $asset['id'])) : e(url('/assets')) ?>" class="panel animate-fadeup form-panel" style="animation-delay:.05s">
   <?= csrf_field() ?>
   <input type="hidden" name="asset[tag]" value="">
   <div class="form-grid">
@@ -77,20 +77,28 @@ $v = static fn (string $key, $fallback = ''): string => $editing ? (string) ($as
       <h3>Photos</h3>
       <span class="page-sub">Select from the shared gallery. The first selected photo becomes the thumbnail. Photos can be reused across assets of the same variety.</span>
     </div>
-    <?php if ($photos !== []): ?>
-      <div class="photo-picker-grid">
-        <?php foreach ($photos as $p): ?>
-          <label class="photo-option">
-            <input type="checkbox" name="photo_ids[]" value="<?= (int) $p['id'] ?>" <?= ($editing || !empty($p['checked'])) ? 'checked' : '' ?>>
-            <img src="<?= e(url('/uploads/' . rawurlencode((string) $p['filename']))) ?>" alt=""
-                 onerror="this.src='<?= e(asset_url('img/placeholder.svg')) ?>'">
-            <span class="photo-option-name"><?= e($p['original_name']) ?></span>
-          </label>
-        <?php endforeach; ?>
-      </div>
-    <?php else: ?>
-      <div class="empty">No photos in the gallery yet. <a href="<?= e(url('/photos')) ?>">Upload photos</a> first — you can link them later from the asset page.</div>
-    <?php endif; ?>
+    <div class="pp-current-row">
+      <button class="btn btn-sm" type="button" data-pp-open="pp-asset-photos">Choose photos</button>
+    </div>
+    <div class="pp-strip">
+      <?php foreach ($selectedPhotos as $p): ?>
+        <div class="pp-strip-item">
+          <img src="<?= e(url('/uploads/' . rawurlencode((string) $p['filename']))) ?>" alt=""
+               onerror="this.src='<?= e(asset_url('img/placeholder.svg')) ?>'">
+          <span class="pp-strip-name"><?= e($p['original_name']) ?></span>
+          <button class="pp-strip-remove" type="button" data-pp-strip-remove="<?= (int) $p['id'] ?>" data-pp-name="photo_ids[]" title="Remove from selection">✕</button>
+        </div>
+      <?php endforeach; ?>
+      <?php if ($selectedPhotos === []): ?>
+        <div class="pp-strip-empty">
+          No photos selected yet.
+          <?php if ($photos === []): ?><a href="<?= e(url('/photos')) ?>">Upload photos</a> first — you can link them later from the asset page.<?php endif; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+    <?php foreach ($selectedPhotos as $p): ?>
+      <input type="hidden" name="photo_ids[]" value="<?= (int) $p['id'] ?>" data-pp-hidden>
+    <?php endforeach; ?>
   </div>
 
   <div class="form-foot">
@@ -98,6 +106,19 @@ $v = static fn (string $key, $fallback = ''): string => $editing ? (string) ($as
     <button type="submit" class="btn btn-primary"><?= $editing ? 'Save changes' : 'Create asset' ?></button>
   </div>
 </form>
+
+<?= \App\Core\View::partial('photo_picker_modal', [
+    'slug' => 'asset-photos',
+    'title' => 'Choose photos',
+    'photos' => $photos,
+    'mode' => 'multi',
+    'name' => 'photo_ids[]',
+    'selectedIds' => array_map(static fn ($p) => (int) $p['id'], $selectedPhotos),
+    'confirm' => 'submit-form',
+    'targetForm' => 'asset-form',
+    'buttonLabel' => 'Confirm selection',
+    'emptyLink' => '/photos',
+]) ?>
 
 <script>
 window.NAIMS.locationsBySite = <?= json_encode(array_map(static fn ($locs) => array_map(static fn ($l) => ['id' => (int) $l['id'], 'name' => $l['name']], $locs), $locationsBySite), JSON_UNESCAPED_SLASHES) ?>;

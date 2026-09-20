@@ -104,6 +104,7 @@ class AssetController
             'title' => $asset['asset_tag'],
             'asset' => $asset,
             'departments' => Department::active(),
+            'galleryPhotos' => Photo::all('asset'),
             'canModify' => Auth::canModify(),
             'isAdmin' => Auth::isAdmin(),
             'important_count' => count(array_filter($alerts, static fn ($a) => $a['severity'] === 'important')),
@@ -147,7 +148,8 @@ class AssetController
             'departments' => Department::active(),
             'sites' => Site::active(),
             'locationsBySite' => Location::activeBySite(),
-            'photos' => $asset ? Asset::photosFor((int) $asset['id']) : Photo::all(),
+            'photos' => Photo::all('asset'),
+            'selectedPhotos' => $asset ? Asset::photosFor((int) $asset['id']) : [],
             'manager' => $user['role_name'] === 'department_manager',
         ]));
     }

@@ -12,16 +12,18 @@ final class Photo
 {
     private const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-    public static function all(): array
+    public static function all(string $kind = 'asset'): array
     {
         return Database::fetchAll(
             'SELECT p.*, u.full_name AS uploaded_by,
                     (SELECT COUNT(*) FROM asset_photos ap WHERE ap.photo_id = p.id)::int AS usage_count,
                     (SELECT a.asset_tag FROM asset_photos ap JOIN assets a ON a.id = ap.asset_id
                      WHERE ap.photo_id = p.id LIMIT 1) AS first_asset
-             FROM photos p LEFT JOIN users u ON u.id = p.created_by
-             ORDER BY p.created_at DESC
-             LIMIT 500'
+              FROM photos p LEFT JOIN users u ON u.id = p.created_by
+              WHERE p.kind = :kind
+              ORDER BY p.created_at DESC
+              LIMIT 500',
+            ['kind' => $kind]
         );
     }
 
@@ -35,7 +37,7 @@ final class Photo
         return Config::get('storage.uploads') . '/' . $photo['filename'];
     }
 
-    public static function upload(array $files, string $variety, ?array $user): array
+    public static function upload(array $files, string $variety, ?array $user, string $kind = 'asset'): array
     {
         $maxBytes = (int) ((float) Config::get('limits.photo_max_mb')) * 1024 * 1024;
         $normalized = [];
@@ -81,14 +83,15 @@ final class Photo
                 throw new RuntimeException('Could not save uploaded photo.');
             }
             $id = Database::insert(
-                'INSERT INTO photos (filename, original_name, variety, mime, size, created_by)
-                 VALUES (:f, :o, :v, :m, :s, :cb)',
+                'INSERT INTO photos (filename, original_name, variety, mime, size, kind, created_by)
+                 VALUES (:f, :o, :v, :m, :s, :k, :cb)',
                 [
                     'f' => $filename,
                     'o' => basename($file['name']),
                     'v' => trim($variety),
                     'm' => $info['mime'],
                     's' => $size,
+                    'k' => $kind,
                     'cb' => $user['id'] ?? null,
                 ]
             );

@@ -14,6 +14,7 @@ use App\Models\Audit;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Location;
+use App\Models\Photo;
 use App\Models\Setting;
 use App\Models\Site;
 use App\Models\User;
@@ -229,8 +230,15 @@ class AdminController
     public function settings(): void
     {
         Auth::requireLogin();
+        $logoId = (string) Setting::get('brand.logo_photo_id', '');
+        $logoPhoto = $logoId !== '' ? Photo::find((int) $logoId) : null;
+        if ($logoPhoto !== null && $logoPhoto['kind'] !== 'asset') {
+            $logoPhoto = null;
+        }
         View::output(View::render('admin/settings', [
             'title' => 'Settings',
+            'logoPhoto' => $logoPhoto,
+            'logoPhotos' => Photo::all('asset'),
             'settings' => [
                 'mail_from' => Setting::get('mail_from', Config::get('mail.from')),
                 'smtp_host' => Setting::get('smtp_host', ''),
@@ -263,6 +271,9 @@ class AdminController
             'weekly_report_enabled' => empty($s['weekly_report_enabled']) ? '0' : '1',
             'multi_asset_threshold' => (string) max(2, (int) ($s['multi_asset_threshold'] ?? 2)),
         ]);
+        $logoId = (int) Request::post('logo_photo_id', 0);
+        $logoPhoto = $logoId > 0 ? Photo::find($logoId) : null;
+        Setting::set('brand.logo_photo_id', ($logoPhoto !== null && $logoPhoto['kind'] === 'asset') ? (string) $logoId : '');
         Auth::flash('success', 'Settings saved.');
         Response::redirect('/admin/settings');
     }
