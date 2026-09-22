@@ -8,7 +8,6 @@
 /** @var string $confirm */
 $targetForm = $targetForm ?? '';
 $formAction = $formAction ?? '';
-$redirect = $redirect ?? '';
 $buttonLabel = $buttonLabel ?? 'Confirm';
 $preview = $preview ?? '';
 $emptyLink = $emptyLink ?? '';
@@ -20,7 +19,6 @@ $type = $mode === 'multi' ? 'checkbox' : 'radio';
      data-fields='<?= e(json_encode([$name => $name], JSON_UNESCAPED_SLASHES)) ?>'
      <?php if ($targetForm !== ''): ?>data-target-form="<?= e($targetForm) ?>"<?php endif; ?>
      <?php if ($formAction !== ''): ?>data-action-url="<?= e($formAction) ?>"<?php endif; ?>
-     <?php if ($redirect !== ''): ?>data-redirect="<?= e($redirect) ?>"<?php endif; ?>
      <?php if ($preview !== ''): ?>data-pp-preview="<?= e($preview) ?>"<?php endif; ?>>
   <div class="pp-backdrop" data-pp-close></div>
   <div class="pp-dialog" role="dialog" aria-modal="true">

@@ -78,7 +78,6 @@ $available = $asset['status'] === 'available';
               'selectedIds' => [],
               'confirm' => 'post',
               'formAction' => url('/assets/' . (int) $asset['id'] . '/photos/assign'),
-              'redirect' => url('/assets/' . (int) $asset['id']),
               'buttonLabel' => 'Link',
               'emptyLink' => '/photos',
           ]) ?>

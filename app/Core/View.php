@@ -28,7 +28,8 @@ final class View
         $data['app_version'] = Config::get('app_version');
         $data['page'] = $template;
         $logoId = (string) Setting::get('brand.logo_photo_id', '');
-        $data['logo_photo'] = $logoId !== '' ? Photo::find((int) $logoId) : null;
+        $logoPhoto = $logoId !== '' ? Photo::find((int) $logoId) : null;
+        $data['logo_photo'] = $logoPhoto !== null && $logoPhoto['kind'] === 'asset' ? $logoPhoto : null;
         if ($data['user'] !== null) {
             if (!isset($data['alerts'])) {
                 $data['alerts'] = AlertEngine::dashboard($data['user']);

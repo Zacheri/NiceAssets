@@ -21,8 +21,6 @@
     document.body.style.overflow = '';
   }
 
-  window.openPhotoPicker = openPhotoPicker;
-
   /* ---------- open triggers ---------- */
   Array.prototype.forEach.call(document.querySelectorAll('[data-pp-open]'), function (btn) {
     btn.addEventListener('click', function () {
@@ -35,19 +33,23 @@
     el.addEventListener('click', function () { closePhotoPicker(); });
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closePhotoPicker();
+    if (e.key !== 'Escape') return;
+    var anyVisible = allModals().some(function (m) { return !m.hidden; });
+    if (anyVisible) closePhotoPicker();
   });
 
   /* ---------- single mode: first click selects, re-click deselects ---------- */
   Array.prototype.forEach.call(allModals(), function (modal) {
     if (modal.getAttribute('data-mode') !== 'single') return;
     var radios = Array.prototype.slice.call(modal.querySelectorAll('input[type=radio]'));
-    Array.prototype.forEach.call(radios, function (input) {
-      input.addEventListener('click', function (e) {
-        e.preventDefault();
-        var was = input.checked;
-        Array.prototype.forEach.call(radios, function (r) { r.checked = false; });
-        input.checked = !was;
+    var selected = modal.querySelector('input[type=radio]:checked') || null;
+    radios.forEach(function (input) {
+      input.addEventListener('click', function () {
+        if (selected === input) { input.checked = false; selected = null; }
+        else { selected = input; } // native activation checks it
+      });
+      input.addEventListener('change', function () {
+        if (input.checked) selected = input;
       });
     });
   });
@@ -233,6 +235,11 @@
       Array.prototype.forEach.call(hiddenInputs(form, name), function (h) {
         if (h.value === value) h.remove();
       });
+    }
+    if (name) {
+      var modal = document.querySelector('.pp-modal[data-name="' + name + '"]');
+      var box = modal ? modal.querySelector('input[value="' + value + '"]') : null;
+      if (box) box.checked = false;
     }
     var item = btn.closest('.pp-strip-item');
     if (item) item.remove();

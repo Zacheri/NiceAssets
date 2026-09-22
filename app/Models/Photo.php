@@ -100,6 +100,7 @@ final class Photo
         if ($created !== []) {
             Audit::log('photo.upload', 'photo', (string) count($created), [
                 'variety' => $variety,
+                'kind' => $kind,
                 'files' => array_column($created, 'filename'),
             ]);
         }

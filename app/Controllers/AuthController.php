@@ -20,10 +20,11 @@ class AuthController
             Response::redirect('/');
         }
         $logoId = (string) Setting::get('brand.logo_photo_id', '');
+        $logoPhoto = $logoId !== '' ? Photo::find((int) $logoId) : null;
         View::output(View::render('auth/login', [
             'title' => 'Sign in',
             'error' => $_SESSION['flash']['error'] ?? null,
-            'logo_photo' => $logoId !== '' ? Photo::find((int) $logoId) : null,
+            'logo_photo' => $logoPhoto !== null && $logoPhoto['kind'] === 'asset' ? $logoPhoto : null,
         ], false));
     }
 

@@ -385,7 +385,7 @@ class AssetController
         $this->requireAsset($id, $user);
         $photoId = Request::int('photo_id');
         $photo = Photo::find($photoId);
-        if ($photo === null) {
+        if ($photo === null || $photo['kind'] !== 'asset') {
             Auth::flash('error', 'Photo not found.');
             Response::back();
         }
