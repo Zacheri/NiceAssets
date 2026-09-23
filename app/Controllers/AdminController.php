@@ -20,6 +20,7 @@ use App\Models\Site;
 use App\Models\User;
 use App\Services\Backup;
 use App\Services\LlmServer;
+use App\Themes;
 use RuntimeException;
 
 class AdminController
@@ -251,6 +252,8 @@ class AdminController
                 'email_role_viewer' => Setting::get('email_role_viewer', '0'),
                 'weekly_report_enabled' => Setting::get('weekly_report_enabled', '1'),
                 'multi_asset_threshold' => Setting::get('multi_asset_threshold', '2'),
+                'theme_default_preset' => Themes::normalizePreset(Setting::get('theme.default_preset', Themes::DEFAULT_PRESET)),
+                'theme_available' => Themes::normalizeAvailable(Setting::get('theme.available', null)),
             ],
         ]));
     }
@@ -258,6 +261,12 @@ class AdminController
     public function settingsUpdate(): void
     {
         $s = Request::post('settings') ?? [];
+        $available = [];
+        foreach (array_keys(Themes::PRESETS) as $name) {
+            if (!empty($s['theme_available_' . $name])) {
+                $available[] = $name;
+            }
+        }
         Setting::setMany([
             'mail_from' => (string) ($s['mail_from'] ?? ''),
             'smtp_host' => (string) ($s['smtp_host'] ?? ''),
@@ -270,6 +279,8 @@ class AdminController
             'email_role_viewer' => empty($s['email_role_viewer']) ? '0' : '1',
             'weekly_report_enabled' => empty($s['weekly_report_enabled']) ? '0' : '1',
             'multi_asset_threshold' => (string) max(2, (int) ($s['multi_asset_threshold'] ?? 2)),
+            'theme.default_preset' => Themes::normalizePreset((string) ($s['theme_default_preset'] ?? '')),
+            'theme.available' => json_encode(Themes::normalizeAvailable($available)),
         ]);
         $logoId = (int) Request::post('logo_photo_id', 0);
         $logoPhoto = $logoId > 0 ? Photo::find($logoId) : null;

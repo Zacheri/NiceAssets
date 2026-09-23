@@ -186,6 +186,9 @@ ALTER TABLE photos ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'asset';
 ALTER TABLE persons ADD COLUMN IF NOT EXISTS portrait_photo_id integer REFERENCES photos(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_persons_portrait ON persons (portrait_photo_id);
 
+-- Migration v1.3: per-user theme override (JSON: {"preset":"...","colors":{...}}).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme text NOT NULL DEFAULT '';
+
 CREATE TABLE IF NOT EXISTS audit_log (
     id            bigserial PRIMARY KEY,
     user_id       integer REFERENCES users(id) ON DELETE SET NULL,

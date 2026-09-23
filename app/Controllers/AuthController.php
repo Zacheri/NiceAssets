@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\View;
 use App\Models\Photo;
 use App\Models\Setting;
+use App\Themes;
 
 class AuthController
 {
@@ -25,6 +26,11 @@ class AuthController
             'title' => 'Sign in',
             'error' => $_SESSION['flash']['error'] ?? null,
             'logo_photo' => $logoPhoto !== null && $logoPhoto['kind'] === 'asset' ? $logoPhoto : null,
+            'theme' => Themes::resolve(
+                null,
+                Setting::get('theme.default_preset', Themes::DEFAULT_PRESET),
+                Setting::get('theme.available', null)
+            ),
         ], false));
     }
 

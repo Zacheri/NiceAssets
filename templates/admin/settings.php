@@ -79,6 +79,24 @@
   </div>
   <input type="hidden" name="logo_photo_id" value="<?= (int) ($logoPhoto['id'] ?? 0) ?>" data-pp-hidden>
 
+  <h2 class="section-title">Theme</h2>
+  <div class="form-grid">
+    <label class="field"><span>Default theme (applies until a user picks their own)</span>
+      <select class="input" name="settings[theme_default_preset]">
+        <?php foreach (\App\Themes::PRESETS as $name => $preset): ?>
+          <option value="<?= e($name) ?>" <?= $settings['theme_default_preset'] === $name ? 'selected' : '' ?>><?= e(ucfirst($name)) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+  </div>
+  <div class="toggle-list">
+    <?php foreach (\App\Themes::PRESETS as $name => $preset): ?>
+      <label class="toggle-row"><span><strong><?= e(ucfirst($name)) ?></strong> — available in the topbar theme menu</span>
+        <input type="checkbox" class="switch" name="settings[theme_available_<?= e($name) ?>]" value="1" <?= in_array($name, $settings['theme_available'], true) ? 'checked' : '' ?>></label>
+    <?php endforeach; ?>
+  </div>
+  <div class="table-note">Users pick their own theme from the topbar menu and can fine-tune any color token as a personal override. The default applies to everyone else, including the sign-in page.</div>
+
   <div class="form-foot">
     <button type="submit" class="btn btn-primary">Save settings</button>
   </div>

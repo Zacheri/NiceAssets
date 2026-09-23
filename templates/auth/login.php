@@ -6,6 +6,7 @@
 <title>Sign in · <?= e($app_name ?? 'Nice Assets') ?></title>
 <link rel="stylesheet" href="<?= e(asset_url('css/app.css')) ?>">
 <link rel="icon" href="<?= e(asset_url('img/favicon.svg')) ?>">
+<?php if (!empty($theme['css'])): ?><style><?= $theme['css'] ?></style><?php endif; ?>
 </head>
 <body class="auth-body">
 <div class="auth-wrap">

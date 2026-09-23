@@ -7,6 +7,7 @@ namespace App\Core;
 use App\Models\Photo;
 use App\Models\Setting;
 use App\Services\AlertEngine;
+use App\Themes;
 
 final class View
 {
@@ -30,6 +31,11 @@ final class View
         $logoId = (string) Setting::get('brand.logo_photo_id', '');
         $logoPhoto = $logoId !== '' ? Photo::find((int) $logoId) : null;
         $data['logo_photo'] = $logoPhoto !== null && $logoPhoto['kind'] === 'asset' ? $logoPhoto : null;
+        $data['theme'] = Themes::resolve(
+            $data['user'],
+            Setting::get('theme.default_preset', Themes::DEFAULT_PRESET),
+            Setting::get('theme.available', null)
+        );
         if ($data['user'] !== null) {
             if (!isset($data['alerts'])) {
                 $data['alerts'] = AlertEngine::dashboard($data['user']);

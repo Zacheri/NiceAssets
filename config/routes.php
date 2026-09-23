@@ -56,6 +56,7 @@ return [
 
     // Preferences
     ['method' => 'POST', 'path' => '/prefs',                  'controller' => 'Pref',   'action' => 'store'],
+    ['method' => 'POST', 'path' => '/account/theme',          'controller' => 'Account', 'action' => 'themeUpdate'],
 
     // AI Assistant
     ['method' => 'GET',  'path' => '/assistant',           'controller' => 'Assistant', 'action' => 'index'],

@@ -48,6 +48,10 @@
   document.addEventListener('click', function () {
     Array.prototype.forEach.call(document.querySelectorAll('.dropdown.open'), function (o) { o.classList.remove('open'); });
   });
+  var themeMenu = document.querySelector('.theme-menu');
+  if (themeMenu) {
+    themeMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
 
   /* ---------- action modal ---------- */
   var backdrop = document.getElementById('modal-backdrop');

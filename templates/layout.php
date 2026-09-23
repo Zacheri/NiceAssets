@@ -22,6 +22,7 @@ $icon = static function (string $paths): string {
 <title><?= e($title) ?> · <?= e($app_name) ?></title>
 <link rel="stylesheet" href="<?= e(asset_url('css/app.css')) ?>">
 <link rel="icon" href="<?= e(asset_url('img/favicon.svg')) ?>">
+<?php if (!empty($theme['css'])): ?><style><?= $theme['css'] ?></style><?php endif; ?>
 <script>
 window.NAIMS = {
   token: '<?= e(\App\Core\CSRF::token()) ?>',
@@ -146,6 +147,40 @@ window.NAIMS = {
                   </a>
                 <?php endforeach; ?>
               <?php endif; ?>
+            </div>
+          </div>
+        </div>
+        <div class="dropdown theme-dd">
+          <button class="theme-toggle dropdown-toggle" type="button" aria-label="Theme" title="Theme">
+            <?= $icon('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>') ?>
+          </button>
+          <div class="dropdown-menu theme-menu">
+            <div class="theme-menu-head">Theme</div>
+            <?php foreach ($theme['available'] as $name): ?>
+              <form method="post" action="<?= e(url('/account/theme')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="preset" value="<?= e($name) ?>">
+                <button type="submit" class="theme-preset-btn <?= $name === $theme['preset'] ? 'active' : '' ?>">
+                  <span class="theme-swatch" style="background:linear-gradient(135deg, <?= e(\App\Themes::PRESETS[$name]['--primary']) ?>, <?= e(\App\Themes::PRESETS[$name]['--accent']) ?>)"></span>
+                  <?= e(ucfirst($name)) ?>
+                </button>
+              </form>
+            <?php endforeach; ?>
+            <div class="theme-custom">
+              <div class="theme-custom-title">Custom colors</div>
+              <form method="post" action="<?= e(url('/account/theme')) ?>">
+                <?= csrf_field() ?>
+                <input type="hidden" name="preset" value="<?= e($theme['preset']) ?>">
+                <div class="theme-colors">
+                  <?php foreach (\App\Themes::COLOR_TOKENS as $token): ?>
+                    <label class="theme-color" title="<?= e($token) ?>">
+                      <span><?= e(ltrim($token, '-')) ?></span>
+                      <input type="color" name="color_<?= e($token) ?>" value="<?= e($theme['colors'][$token] ?? \App\Themes::PRESETS[$theme['preset']][$token]) ?>">
+                    </label>
+                  <?php endforeach; ?>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm btn-block">Save custom colors</button>
+              </form>
             </div>
           </div>
         </div>

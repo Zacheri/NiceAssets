@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Themes;
 use RuntimeException;
 
 final class User
@@ -107,6 +108,15 @@ final class User
             );
         }
         Audit::log('user.update', 'user', (string) $id, ['username' => $params['u'], 'role' => $d['role_id']]);
+    }
+
+    public static function setTheme(int $id, array $theme): void
+    {
+        $normalized = Themes::normalizeUserTheme($theme);
+        Database::execute(
+            'UPDATE users SET theme = :t, updated_at = now() WHERE id = :id',
+            ['t' => json_encode($normalized, JSON_UNESCAPED_SLASHES), 'id' => $id]
+        );
     }
 
     public static function delete(int $id, ?array $currentUser): void
