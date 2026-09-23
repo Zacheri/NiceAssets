@@ -28,6 +28,9 @@ $v = static fn (string $key, $fallback = ''): string => $editing ? (string) ($as
     <label class="field"><span>Brand / Manufacturer</span>
       <input class="input" type="text" name="asset[brand]" value="<?= e($v('brand')) ?>">
     </label>
+    <label class="field span-2"><span>Description</span>
+      <textarea class="input" name="asset[description]" rows="2"><?= e($v('description')) ?></textarea>
+    </label>
     <label class="field"><span>Category</span>
       <select class="input" name="asset[category_id]">
         <option value="">— None —</option>

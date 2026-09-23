@@ -43,6 +43,14 @@ final class Person
         );
     }
 
+    public static function findByName(string $name): ?array
+    {
+        return Database::fetchOne(
+            'SELECT * FROM persons WHERE lower(full_name) = lower(:n)',
+            ['n' => trim($name)]
+        );
+    }
+
     public static function create(array $d): int
     {
         if (trim($d['full_name'] ?? '') === '') {

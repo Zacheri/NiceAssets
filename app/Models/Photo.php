@@ -107,6 +107,58 @@ final class Photo
         return $created;
     }
 
+    /**
+     * Create a photo row from an already-downloaded local file
+     * (CSV import photo download). Same validation as upload().
+     */
+    public static function createFromPath(string $path, string $originalName, string $variety, ?array $user, string $kind = 'asset'): int
+    {
+        $maxBytes = (int) ((float) Config::get('limits.photo_max_mb')) * 1024 * 1024;
+        $size = (int) filesize($path);
+        if ($size <= 0 || $size > $maxBytes) {
+            throw new RuntimeException('Photo too large (max ' . Config::get('limits.photo_max_mb') . ' MB).');
+        }
+        $info = @getimagesize($path);
+        if ($info === false) {
+            throw new RuntimeException('Downloaded file is not a valid image.');
+        }
+        $ext = match ($info['mime']) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => null,
+        };
+        if ($ext === null) {
+            throw new RuntimeException('Unsupported image type: ' . $info['mime']);
+        }
+        $filename = date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $dest = Config::get('storage.uploads') . '/' . $filename;
+        if (!copy($path, $dest)) {
+            throw new RuntimeException('Could not save downloaded photo.');
+        }
+        $id = Database::insert(
+            'INSERT INTO photos (filename, original_name, variety, mime, size, kind, created_by)
+             VALUES (:f, :o, :v, :m, :s, :k, :cb)',
+            [
+                'f' => $filename,
+                'o' => basename($originalName),
+                'v' => trim($variety),
+                'm' => $info['mime'],
+                's' => $size,
+                'k' => $kind,
+                'cb' => $user['id'] ?? null,
+            ]
+        );
+        Audit::log('photo.upload', 'photo', (string) $id, [
+            'variety' => trim($variety),
+            'kind' => $kind,
+            'files' => [$filename],
+            'source' => 'import_download',
+        ]);
+        return (int) $id;
+    }
+
     public static function delete(int $id, ?array $user): void
     {
         $photo = self::find($id);

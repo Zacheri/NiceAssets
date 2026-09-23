@@ -188,6 +188,7 @@ final class Asset
             'serial_number' => trim((string) ($d['serial_number'] ?? '')) ?: null,
             'model_number' => trim((string) ($d['model_number'] ?? '')) ?: null,
             'brand' => trim((string) ($d['brand'] ?? '')) ?: null,
+            'description' => mb_substr(trim((string) ($d['description'] ?? '')), 0, 500),
             'category_id' => !empty($d['category_id']) ? (int) $d['category_id'] : null,
             'department_id' => !empty($d['department_id']) ? (int) $d['department_id'] : null,
             'site_id' => !empty($d['site_id']) ? (int) $d['site_id'] : null,
@@ -223,15 +224,16 @@ final class Asset
             throw new RuntimeException('Asset tag ' . $c['asset_tag'] . ' already exists.');
         }
         $id = Database::insert(
-            'INSERT INTO assets (asset_tag, serial_number, model_number, brand, category_id, department_id,
+            'INSERT INTO assets (asset_tag, serial_number, model_number, brand, description, category_id, department_id,
                 site_id, location_id, purchase_date, purchase_cost, warranty_expiration, sub_quantity,
                 status, created_by)
-             VALUES (:t, :sn, :mn, :b, :cat, :dep, :site, :loc, :pd, :cost, :we, :sq, \'available\', :cb)',
+             VALUES (:t, :sn, :mn, :b, :desc, :cat, :dep, :site, :loc, :pd, :cost, :we, :sq, \'available\', :cb)',
             [
                 't' => $c['asset_tag'],
                 'sn' => $c['serial_number'],
                 'mn' => $c['model_number'],
                 'b' => $c['brand'],
+                'desc' => $c['description'],
                 'cat' => $c['category_id'],
                 'dep' => $c['department_id'],
                 'site' => $c['site_id'],
@@ -262,7 +264,7 @@ final class Asset
         }
         Database::execute(
             'UPDATE assets SET asset_tag = :t, serial_number = :sn, model_number = :mn, brand = :b,
-                category_id = :cat, department_id = :dep, site_id = :site, location_id = :loc,
+                description = :desc, category_id = :cat, department_id = :dep, site_id = :site, location_id = :loc,
                 purchase_date = :pd, purchase_cost = :cost, warranty_expiration = :we,
                 sub_quantity = :sq, updated_at = now()
              WHERE id = :id',
@@ -271,6 +273,7 @@ final class Asset
                 'sn' => $c['serial_number'],
                 'mn' => $c['model_number'],
                 'b' => $c['brand'],
+                'desc' => $c['description'],
                 'cat' => $c['category_id'],
                 'dep' => $c['department_id'],
                 'site' => $c['site_id'],
@@ -282,6 +285,45 @@ final class Asset
             ], ['id' => $id])
         );
         Audit::log('asset.update', 'asset', (string) $id, ['asset_tag' => $c['asset_tag']]);
+    }
+
+    /**
+     * Bulk-import insert: full field set, status taken from the caller,
+     * no per-row audit (the import service audits the run as a whole).
+     */
+    public static function importRow(array $c, int $userId): int
+    {
+        $id = Database::insert(
+            'INSERT INTO assets (asset_tag, serial_number, model_number, brand, description,
+                category_id, department_id, site_id, assigned_to_person_id,
+                purchase_date, purchase_cost, status, created_by)
+             VALUES (:t, :sn, :mn, :b, :desc, :cat, :dep, :site, :person, :pd, :cost, :status, :cb)',
+            [
+                't' => $c['asset_tag'],
+                'sn' => $c['serial_number'],
+                'mn' => $c['model_number'],
+                'b' => $c['brand'],
+                'desc' => $c['description'],
+                'cat' => $c['category_id'],
+                'dep' => $c['department_id'],
+                'site' => $c['site_id'],
+                'person' => $c['assigned_to_person_id'],
+                'pd' => $c['purchase_date'],
+                'cost' => $c['purchase_cost'],
+                'status' => $c['status'],
+                'cb' => $userId,
+            ]
+        );
+        return (int) $id;
+    }
+
+    public static function linkPhoto(int $assetId, int $photoId, int $position = 0, bool $isThumbnail = false): void
+    {
+        Database::execute(
+            'INSERT INTO asset_photos (asset_id, photo_id, position, is_thumbnail)
+             VALUES (:a, :p, :pos, :t) ON CONFLICT DO NOTHING',
+            ['a' => $assetId, 'p' => $photoId, 'pos' => $position, 't' => $isThumbnail ? 1 : 0]
+        );
     }
 
     public static function setStatus(int $id, string $status, array $extra, ?array $user): void

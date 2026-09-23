@@ -13,6 +13,9 @@ $available = $asset['status'] === 'available';
       <span class="status-badge <?= status_class($asset['status']) ?>"><?= e(status_label($asset['status'])) ?></span>
     </h1>
     <div class="page-sub"><?= e(trim(($asset['brand'] ?? '') . ' ' . ($asset['model_number'] ?? ''))) ?> · <?= e($asset['category_name'] ?? 'Uncategorized') ?></div>
+    <?php if (!empty($asset['description'])): ?>
+      <div class="page-sub"><?= e($asset['description']) ?></div>
+    <?php endif; ?>
   </div>
   <div class="page-actions">
     <a class="btn btn-ghost" href="<?= e(url('/assets/' . (int) $asset['id'] . '/qr')) ?>" target="_blank">QR label</a>
