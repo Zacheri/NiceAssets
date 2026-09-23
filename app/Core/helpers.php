@@ -105,6 +105,7 @@ function action_label(string $action): string
         'photo.delete' => 'Photo deleted',
         'auth.login' => 'Logged in',
         'auth.logout' => 'Logged out',
+        'user.theme' => 'Theme changed',
         default => $action,
     };
 }

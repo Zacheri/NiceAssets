@@ -95,7 +95,7 @@
         <input type="checkbox" class="switch" name="settings[theme_available_<?= e($name) ?>]" value="1" <?= in_array($name, $settings['theme_available'], true) ? 'checked' : '' ?>></label>
     <?php endforeach; ?>
   </div>
-  <div class="table-note">Users pick their own theme from the topbar menu and can fine-tune any color token as a personal override. The default applies to everyone else, including the sign-in page.</div>
+  <div class="table-note">Users pick their own theme from the topbar menu and can fine-tune a few colors (primary, accent, background, sidebar) as a personal override. The default applies until a user picks their own, and always on the sign-in page. Un-availing a preset reverts users who had chosen it to the default theme.</div>
 
   <div class="form-foot">
     <button type="submit" class="btn btn-primary">Save settings</button>

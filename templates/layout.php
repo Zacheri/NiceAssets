@@ -156,11 +156,19 @@ window.NAIMS = {
           </button>
           <div class="dropdown-menu theme-menu">
             <div class="theme-menu-head">Theme</div>
+            <form method="post" action="<?= e(url('/account/theme')) ?>">
+              <?= csrf_field() ?>
+              <input type="hidden" name="preset" value="">
+              <button type="submit" class="theme-preset-btn <?= !empty($theme['follow_default']) ? 'active' : '' ?>">
+                <span class="theme-swatch theme-swatch-auto"></span>
+                Follow company default
+              </button>
+            </form>
             <?php foreach ($theme['available'] as $name): ?>
               <form method="post" action="<?= e(url('/account/theme')) ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="preset" value="<?= e($name) ?>">
-                <button type="submit" class="theme-preset-btn <?= $name === $theme['preset'] ? 'active' : '' ?>">
+                <button type="submit" class="theme-preset-btn <?= empty($theme['follow_default']) && $name === $theme['preset'] ? 'active' : '' ?>">
                   <span class="theme-swatch" style="background:linear-gradient(135deg, <?= e(\App\Themes::PRESETS[$name]['--primary']) ?>, <?= e(\App\Themes::PRESETS[$name]['--accent']) ?>)"></span>
                   <?= e(ucfirst($name)) ?>
                 </button>
@@ -172,7 +180,7 @@ window.NAIMS = {
                 <?= csrf_field() ?>
                 <input type="hidden" name="preset" value="<?= e($theme['preset']) ?>">
                 <div class="theme-colors">
-                  <?php foreach (\App\Themes::COLOR_TOKENS as $token): ?>
+                  <?php foreach (\App\Themes::OVERRIDABLE as $token): ?>
                     <label class="theme-color" title="<?= e($token) ?>">
                       <span><?= e(ltrim($token, '-')) ?></span>
                       <input type="color" name="color_<?= e($token) ?>" value="<?= e($theme['colors'][$token] ?? \App\Themes::PRESETS[$theme['preset']][$token]) ?>">

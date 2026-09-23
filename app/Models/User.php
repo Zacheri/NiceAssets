@@ -112,10 +112,13 @@ final class User
 
     public static function setTheme(int $id, array $theme): void
     {
-        $normalized = Themes::normalizeUserTheme($theme);
+        // An empty preset means "follow the company default" and is stored as ''.
+        $json = (($theme['preset'] ?? '') === '')
+            ? ''
+            : json_encode(Themes::normalizeUserTheme($theme), JSON_UNESCAPED_SLASHES);
         Database::execute(
             'UPDATE users SET theme = :t, updated_at = now() WHERE id = :id',
-            ['t' => json_encode($normalized, JSON_UNESCAPED_SLASHES), 'id' => $id]
+            ['t' => $json, 'id' => $id]
         );
     }
 

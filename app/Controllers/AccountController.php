@@ -16,13 +16,16 @@ class AccountController
     public function themeUpdate(): void
     {
         $user = Auth::requireLogin();
-        $preset = Themes::normalizePreset((string) Request::post('preset', ''));
-        $base = Themes::PRESETS[$preset];
+        $preset = (string) Request::post('preset', '');
         $colors = [];
-        foreach (Themes::COLOR_TOKENS as $token) {
-            $value = Themes::normalizeColor((string) Request::post('color_' . $token, ''));
-            if ($value !== '' && $value !== ($base[$token] ?? null)) {
-                $colors[$token] = $value;
+        if ($preset !== '') {
+            $preset = Themes::normalizePreset($preset);
+            $base = Themes::PRESETS[$preset];
+            foreach (Themes::OVERRIDABLE as $token) {
+                $value = Themes::normalizeColor((string) Request::post('color_' . $token, ''));
+                if ($value !== '' && $value !== ($base[$token] ?? null)) {
+                    $colors[$token] = $value;
+                }
             }
         }
         User::setTheme((int) $user['id'], ['preset' => $preset, 'colors' => $colors]);

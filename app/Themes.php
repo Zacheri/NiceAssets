@@ -136,7 +136,7 @@ final class Themes
         ],
     ];
 
-    /** Color tokens a user may override with a custom color. */
+    /** All color tokens a preset may set (used to diff preset CSS). */
     public const COLOR_TOKENS = [
         '--bg',
         '--surface',
@@ -162,6 +162,14 @@ final class Themes
         '--slate-bg',
         '--sidebar',
         '--sidebar-2',
+    ];
+
+    /** The color tokens a user may override with a custom color. */
+    public const OVERRIDABLE = [
+        '--primary',
+        '--accent',
+        '--bg',
+        '--sidebar',
     ];
 
     public static function normalizePreset(mixed $raw): string
@@ -212,7 +220,8 @@ final class Themes
     /**
      * Validate a stored per-user theme (JSON string or array). Never throws:
      * any tampered or malformed input degrades to the default preset with no
-     * custom colors, and individual invalid color entries are dropped.
+     * custom colors, and color entries outside the OVERRIDABLE tokens or in
+     * an invalid format are dropped.
      */
     public static function normalizeUserTheme(mixed $raw): array
     {
@@ -226,7 +235,7 @@ final class Themes
         $colors = [];
         $input = $raw['colors'] ?? null;
         if (is_array($input)) {
-            foreach (self::COLOR_TOKENS as $token) {
+            foreach (self::OVERRIDABLE as $token) {
                 $value = $input[$token] ?? null;
                 if (is_string($value)) {
                     $value = self::normalizeColor($value);
@@ -250,8 +259,13 @@ final class Themes
      * (settings values and the user's stored theme) so a tampered DB value
      * degrades to the default preset instead of rendering untrusted CSS.
      *
-     * Returns preset, colors, available, default, and css (a "body{...}"
-     * override block, or '' when nothing differs from the default preset).
+     * A null/empty stored theme means "follow the company default": the
+     * effective preset is the admin's default (after the availability
+     * check), distinct from an explicit {"preset":"default"} choice.
+     *
+     * Returns preset, colors, available, default, follow_default, and css
+     * (a "body{...}" override block, or '' when nothing differs from the
+     * built-in default preset).
      */
     public static function resolve(?array $user, mixed $defaultPresetRaw, mixed $availableRaw): array
     {
@@ -260,7 +274,18 @@ final class Themes
         if (!in_array($defaultPreset, $available, true)) {
             $defaultPreset = $available[0];
         }
-        $theme = self::normalizeUserTheme($user['theme'] ?? null);
+        $raw = $user['theme'] ?? null;
+        if ($raw === null || (is_string($raw) && trim($raw) === '')) {
+            return [
+                'preset' => $defaultPreset,
+                'colors' => [],
+                'available' => $available,
+                'default' => $defaultPreset,
+                'follow_default' => true,
+                'css' => self::cssFor(self::merge($defaultPreset, [])),
+            ];
+        }
+        $theme = self::normalizeUserTheme($raw);
         if (!in_array($theme['preset'], $available, true)) {
             $theme['preset'] = $defaultPreset;
         }
@@ -269,6 +294,7 @@ final class Themes
             'colors' => $theme['colors'],
             'available' => $available,
             'default' => $defaultPreset,
+            'follow_default' => false,
             'css' => self::cssFor(self::merge($theme['preset'], $theme['colors'])),
         ];
     }
