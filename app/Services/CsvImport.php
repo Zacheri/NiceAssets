@@ -18,6 +18,9 @@ final class CsvImport
     public const MAX_FILE_MB = 10;
     public const PREVIEW_ROWS = 50;
 
+    /** Legal mapping targets for the import wizard (select options). */
+    public const TARGETS = ['asset_tag', 'purchase_date', 'person', 'category', 'photo_url', 'description', 'brand', 'serial_number', 'purchase_cost', 'purchase_cost_fallback', 'site', 'department', 'status', 'model_number', 'ignore'];
+
     /** AssetTiger status label (lowercased) -> app status enum. */
     public const STATUS_MAP = [
         'checked out' => 'checked_out',
@@ -256,6 +259,10 @@ final class CsvImport
                 );
                 $text = is_array($res) ? (string) ($res['text'] ?? '') : (string) $res;
                 $out[$field] = self::parseClassification($text, $field, $spec['values']);
+                if ($out[$field] === []) {
+                    $out['ai_unavailable'] = true;
+                    $out['ai_error'] = $field . ': model returned no usable classification.';
+                }
             } catch (\Throwable $e) {
                 $out['ai_unavailable'] = true;
                 $out['ai_error'] = $field . ': ' . $e->getMessage();

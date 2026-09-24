@@ -77,6 +77,9 @@ window.NAIMS = {
         <a href="<?= e(url('/admin/persons')) ?>" class="<?= str_starts_with($nav_active, 'admin/persons') ? 'active' : '' ?>">
           <?= $icon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>') ?> Persons
         </a>
+        <a href="<?= e(url('/admin/import')) ?>" class="<?= $nav_active === 'admin/import' ? 'active' : '' ?>">
+          <?= $icon('<path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>') ?> Import
+        </a>
         <a href="<?= e(url('/admin/departments')) ?>" class="<?= $nav_active === 'admin/departments' ? 'active' : '' ?>">
           <?= $icon('<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>') ?> Departments
         </a>
