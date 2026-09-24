@@ -408,10 +408,76 @@ final class CsvImport
     }
 
     /**
+     * Download distinct photo URLs once each; return per-URL photo ids.
+     * $byUrl: [url => true] for the URLs present in the import.
+     * Failures never throw — they are counted and reported.
+     */
+    public static function downloadPhotos(array $byUrl, ?array $user): array
+    {
+        $result = ['downloaded' => 0, 'failed' => 0, 'failures' => [], 'ids' => []];
+        $tmp = tempnam(sys_get_temp_dir(), 'naims_import_');
+        if ($tmp === false) {
+            return $result;
+        }
+        foreach (array_keys($byUrl) as $url) {
+            $ok = false;
+            $reason = '';
+            $fh = null;
+            if (!preg_match('#^https?://#i', (string) $url)) {
+                $reason = 'not an http(s) URL';
+            } else {
+                $fh = fopen($tmp, 'w');
+                if ($fh === false) {
+                    $reason = 'could not open temp file';
+                } else {
+                    $ch = curl_init((string) $url);
+                    curl_setopt_array($ch, [
+                        CURLOPT_FILE => $fh,
+                        CURLOPT_FOLLOWLOCATION => true,
+                        CURLOPT_MAXREDIRS => 3,
+                        CURLOPT_TIMEOUT => 20,
+                        CURLOPT_MAXFILESIZE => 10 * 1024 * 1024,
+                        CURLOPT_USERAGENT => 'NiceAssets-Import/1.0',
+                    ]);
+                    $code = curl_exec($ch) ? (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE) : 0;
+                    $reason = curl_error($ch);
+                    curl_close($ch);
+                    if ($code !== 200) {
+                        $reason = 'HTTP ' . $code . ($reason !== '' ? ' (' . $reason . ')' : '');
+                    } elseif ((int) filesize($tmp) === 0) {
+                        $reason = 'empty response';
+                    } else {
+                        try {
+                            $result['ids'][$url] = \App\Models\Photo::createFromPath(
+                                $tmp, basename((string) parse_url((string) $url, PHP_URL_PATH) ?: 'photo.jpg'),
+                                'import', $user
+                            );
+                            $result['downloaded']++;
+                            $ok = true;
+                        } catch (\Throwable $e) {
+                            $reason = $e->getMessage();
+                        }
+                    }
+                }
+            }
+            if ($fh !== null) {
+                fclose($fh);
+            }
+            if (!$ok) {
+                $result['failed']++;
+                $result['failures'][$url] = $reason;
+            }
+            @unlink($tmp);
+        }
+        return $result;
+    }
+
+    /**
      * Transactional import. $llm: Task 3's classification (may be []).
      * $options: ['photos' => bool, 'create_persons' => bool].
-     * Photo DOWNLOAD is implemented in Task 5 — when $options['photos'] is on,
-     * Task 5 replaces the photos block below.
+     * When $options['photos'] is on, distinct photo URLs are downloaded
+     * BEFORE the transaction (one photo per distinct URL, linked to every
+     * created asset that referenced it); report counts are per distinct URL.
      */
     public static function import(array $rows, array $mapping, array $options, array $llm = [], ?array $user = null): array
     {
@@ -436,6 +502,26 @@ final class CsvImport
         $sites = [];
         foreach (Database::fetchAll('SELECT id, name FROM sites') as $s) {
             $sites[strtolower($s['name'])] = (int) $s['id'];
+        }
+
+        $photoIds = [];
+        if (!empty($options['photos'])) {
+            $photoUrls = [];
+            foreach ($rows as $row) {
+                $c = self::clean($row, $mapping);
+                if ($c['photo_url'] !== null) {
+                    $photoUrls[$c['photo_url']] = true;
+                }
+            }
+            // Downloads run BEFORE beginTransaction(): they are slow network
+            // I/O and must not hold the DB transaction open. Consequence:
+            // photo rows created here are not rolled back if the import
+            // transaction fails (the asset_photos links are — they are
+            // inserted inside the transaction).
+            $photoResult = self::downloadPhotos($photoUrls, $user);
+            $photoIds = $photoResult['ids'];
+            $report['photos_downloaded'] = $photoResult['downloaded'];
+            $report['photos_failed'] = $photoResult['failed'];
         }
 
         $pdo = Database::pdo();
@@ -496,8 +582,9 @@ final class CsvImport
                 $existingTags[strtolower($c['asset_tag'])] = $id;
                 $report['created']++;
 
-                // Photos: Task 5 implements the download. Until then, the
-                // option is a no-op counted in the report.
+                if (!empty($options['photos']) && $c['photo_url'] !== null && isset($photoIds[$c['photo_url']])) {
+                    Asset::linkPhoto($id, $photoIds[$c['photo_url']], 0, true);
+                }
             }
             $pdo->commit();
         } catch (\Throwable $e) {
