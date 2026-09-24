@@ -198,6 +198,135 @@ final class CsvImport
     }
 
     /**
+     * Optional LLM classification of distinct values. One prompt per field.
+     * $distinct: distinctValues() output. $enabled: the AI-assist toggle.
+     * Never throws: any failure yields ai_unavailable=true with the
+     * deterministic path still intact.
+     */
+    public static function llmClassify(array $distinct, bool $enabled): array
+    {
+        $out = ['departments' => [], 'persons' => [], 'brands' => [],
+                'ai_unavailable' => false, 'ai_error' => null];
+        if (!$enabled) {
+            return $out;
+        }
+        try {
+            $state = LlmServer::state();
+        } catch (\Throwable $e) {
+            $out['ai_unavailable'] = true;
+            $out['ai_error'] = 'Could not check LLM server state: ' . $e->getMessage();
+            return $out;
+        }
+        if ($state['status'] !== 'ready') {
+            $out['ai_unavailable'] = true;
+            $out['ai_error'] = 'LLM server is not running (status: ' . $state['status'] . ').';
+            return $out;
+        }
+        $keyOf = ['departments' => 'department', 'persons' => 'person', 'brands' => 'brand'];
+        $fields = [
+            'departments' => ['values' => array_keys($distinct['department']),
+                              'column' => 'Department',
+                              'instruction' => 'Classify each value as "real-dept" (a genuine department/team name) or "status-note" (a status or note that was mistakenly stored in the department field, e.g. "IN STOCK", "DISPOSED/DONATED/SOLD", "**EMPLOYEE NEVER RETURNED**").'],
+            'persons' => ['values' => array_keys($distinct['person']),
+                          'column' => 'Assigned to',
+                          'instruction' => 'Classify each value as "person" (a real employee name) or "non-person" (an office, location, customer, or other non-person entity).'],
+            'brands' => ['values' => array_keys($distinct['brand']),
+                         'column' => 'Brand',
+                         'instruction' => 'For each value, return the canonical brand spelling (fix case and obvious typos, e.g. "ACER" -> "Acer"). The returned value MUST be one of the input values or a case/trim variant of one.'],
+        ];
+        foreach ($fields as $field => $spec) {
+            if ($spec['values'] === []) {
+                continue;
+            }
+            $system = 'You are a data-cleaning assistant for an asset inventory import. '
+                . 'You receive distinct values from the "' . $spec['column'] . '" column of a CSV export. '
+                . $spec['instruction'] . ' Respond with a JSON object only — no prose, no markdown — '
+                . 'mapping each input value to its classification.';
+            $user = json_encode(array_map(fn($v) => ['value' => $v, 'count' => $distinct[$keyOf[$field]][$v]], $spec['values']));
+            try {
+                $res = LlmClient::chat(
+                    [
+                        ['role' => 'system', 'content' => $system],
+                        ['role' => 'user', 'content' => $user],
+                    ],
+                    [],
+                    fn() => null,
+                    1,
+                    120
+                );
+                $text = is_array($res) ? (string) ($res['text'] ?? '') : (string) $res;
+                $out[$field] = self::parseClassification($text, $field, $spec['values']);
+            } catch (\Throwable $e) {
+                $out['ai_unavailable'] = true;
+                $out['ai_error'] = $field . ': ' . $e->getMessage();
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Parse + validate one field's LLM classification. Pure function.
+     * $values: the distinct input values (the only legal keys).
+     * Returns [value => classification] with invalid entries dropped.
+     */
+    public static function parseClassification(string $raw, string $field, array $values): array
+    {
+        $json = self::extractJson($raw);
+        if ($json === null || !is_array($json)) {
+            return [];
+        }
+        $out = [];
+        foreach ($json as $key => $val) {
+            $key = (string) $key;
+            if (!in_array($key, $values, true)) {
+                continue; // LLM invented a value: drop
+            }
+            $val = is_array($val) ? ($val['class'] ?? $val['value'] ?? null) : $val;
+            if (!is_string($val)) {
+                continue;
+            }
+            $val = trim($val);
+            $ok = match ($field) {
+                'departments' => in_array($val, ['real-dept', 'status-note'], true),
+                'persons' => in_array($val, ['person', 'non-person'], true),
+                'brands' => $val !== '' && self::isBrandVariant($val, $values),
+                default => false,
+            };
+            if ($ok) {
+                $out[$key] = $val;
+            }
+        }
+        return $out;
+    }
+
+    /** Brand canonical must be a trim/case variant of one of the input values. */
+    private static function isBrandVariant(string $candidate, array $values): bool
+    {
+        $lc = strtolower($candidate);
+        foreach ($values as $v) {
+            if (strtolower(trim($v)) === $lc) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Tolerate code fences / prose around the JSON object. */
+    private static function extractJson(string $raw): ?array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+        $start = strpos($raw, '{');
+        $end = strrpos($raw, '}');
+        if ($start === false || $end === false || $end <= $start) {
+            return null;
+        }
+        return json_decode(substr($raw, $start, $end - $start + 1), true);
+    }
+
+    /**
      * $llm: Task 3's classification output (may be []).
      * Returns summary counts, the issue list, and the first PREVIEW_ROWS rows.
      */
