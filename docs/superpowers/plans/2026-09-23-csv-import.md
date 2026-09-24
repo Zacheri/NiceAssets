@@ -15,7 +15,7 @@
 - Vanilla PHP 8.4 + PostgreSQL, no frameworks, no JS build step. PSR-4 `app/`, SQL in models, thin controllers, `e()` escaping, `url()` links, CSRF on every POST (router-enforced `_token`), vanilla JS IIFEs.
 - All schema changes idempotent in `db/schema.sql` (the entrypoint applies it every boot with `ON_ERROR_STOP=1`).
 - No automated test suite. Verification bar per task: `php -l` on every changed/created PHP file, `node --check` if JS changes, and CLI smoke tests (`php -r` with `vendor/autoload.php`) for pure functions. **Do NOT run `docker compose`** — the live stack on port 8080 belongs to the main checkout; the controller rebuilds and live-verifies after merge.
-- The reference sample CSV is at `/Users/zacheri/Documents/NAIMS/sample-import.csv` (readable from the worktree via that absolute path). Its profile (2,164 rows × 16 fields; 927 Checked out / 557 Available / 410 Lost-Missing / 184 Disposed / 33 Sold / 31 Donated / 20 Broken / 2 Under repair; 236 `IN STOCK` + 205 `DISPOSED/DONATED/SOLD` + 161 `**EMPLOYEE NEVER RETURNED**` departments; 356 empty + 33 `?` + 22 `NA` + 5 `N/A` serials; 117 `0 in stock` + 28 `500 in stock` + 30 `NA` models) is the acceptance dataset for the deterministic path.
+- The reference sample CSV is at `/Users/zacheri/Documents/NAIMS/sample-import.csv` (readable from the worktree via that absolute path). Its profile (2,164 rows × 16 fields; 927 Checked out / 557 Available / 410 Lost-Missing / 184 Disposed / 33 Sold / 31 Donated / 20 Broken / 2 Under repair; 236 `IN STOCK` + 205 `DISPOSED/DONATED/SOLD` + 161 `**EMPLOYEE NEVER RETURNED**` departments; serials nulled to 455 = 359 empty/whitespace + 33 `?` + 22 `NA` + 22 `N/A` + 30 `Article #: …` + 6 `Product # …`; models nulled to 180 = 150 `N in stock` (117 `0 in stock`, 28 `500 in stock`, 5 others: 250/300×2/400/750) + 30 `NA`) is the acceptance dataset for the deterministic path. (Ruling 2026-09-23: supersedes the earlier partial enumeration 416/145 — the code follows the brief's explicit garbage rules; verified against the file.)
 - Uploads: `.csv` extension, ≤ 10 MB, stored in `storage/imports/` (volume-mounted, NOT webroot); filename never used in a URL.
 - LLM output: parsed as JSON; every key re-validated against the input value set; every value against the allowed domain; invalid entries dropped; parse failure = `ai_unavailable`, never a crash.
 - The import must work with the LLM off and with the LLM server not running.
@@ -741,7 +741,7 @@ echo "dept_notes_leaked=$deptNotes serial_null=$serialNull model_null_instock=$m
 '
 ```
 
-Expected: `{"checked_out":927,"available":557,"lost":410,"disposed":184,"sold":33,"donated":31,"broken":20,"in_repair":2}`, `dept_notes_leaked=0`, `serial_null=416` (356 empty + 33 `?` + 22 `NA` + 5 `N/A`), `model_null_instock=145` (117 + 28), `tag_empty=0`. If any number differs, debug clean() before committing — the reference profile in Global Constraints is the acceptance set.
+Expected: `{"checked_out":927,"available":557,"lost":410,"disposed":184,"sold":33,"donated":31,"broken":20,"in_repair":2}`, `dept_notes_leaked=0`, `serial_null=455` (359 empty/whitespace + 33 `?` + 22 `NA` + 22 `N/A` + 30 `Article #:` + 6 `Product #`), `model_null_instock=150` (117 `0 in stock` + 28 `500 in stock` + 5 other `N in stock`), `tag_empty=0`. If any number differs, debug clean() before committing — the reference profile in Global Constraints is the acceptance set.
 
 - [ ] **Step 9: Commit**
 
