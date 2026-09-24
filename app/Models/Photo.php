@@ -114,6 +114,9 @@ final class Photo
     public static function createFromPath(string $path, string $originalName, string $variety, ?array $user, string $kind = 'asset'): int
     {
         $maxBytes = (int) ((float) Config::get('limits.photo_max_mb')) * 1024 * 1024;
+        if (!is_file($path)) {
+            throw new RuntimeException('Downloaded file is missing.');
+        }
         $size = (int) filesize($path);
         if ($size <= 0 || $size > $maxBytes) {
             throw new RuntimeException('Photo too large (max ' . Config::get('limits.photo_max_mb') . ' MB).');

@@ -137,6 +137,9 @@ CREATE INDEX IF NOT EXISTS idx_assets_purchase_date ON assets (purchase_date);
 CREATE INDEX IF NOT EXISTS idx_assets_warranty      ON assets (warranty_expiration);
 CREATE INDEX IF NOT EXISTS idx_assets_created_at    ON assets (created_at);
 
+-- Migration v1.4: asset description (CSV import).
+ALTER TABLE assets ADD COLUMN IF NOT EXISTS description text;
+
 ALTER TABLE assets DROP COLUMN IF EXISTS search_vector;
 ALTER TABLE assets ADD COLUMN IF NOT EXISTS search_vector tsvector
     GENERATED ALWAYS AS (
@@ -144,7 +147,7 @@ ALTER TABLE assets ADD COLUMN IF NOT EXISTS search_vector tsvector
         setweight(to_tsvector('english', coalesce(serial_number, '')),   'B') ||
         setweight(to_tsvector('english', coalesce(model_number, '')),    'B') ||
         setweight(to_tsvector('english', coalesce(brand, '')),           'C') ||
-        setweight(to_tsvector('english', coalesce(description, '')),   'C') ||
+        setweight(to_tsvector('english', coalesce(description, '')),     'C') ||
         setweight(to_tsvector('english', coalesce(status_reason, '')),   'C')
     ) STORED;
 
@@ -189,9 +192,6 @@ CREATE INDEX IF NOT EXISTS idx_persons_portrait ON persons (portrait_photo_id);
 
 -- Migration v1.3: per-user theme override (JSON: {"preset":"...","colors":{...}}).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS theme text NOT NULL DEFAULT '';
-
--- Migration v1.4: asset description (CSV import).
-ALTER TABLE assets ADD COLUMN IF NOT EXISTS description text;
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id            bigserial PRIMARY KEY,
