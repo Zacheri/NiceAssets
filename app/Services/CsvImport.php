@@ -349,7 +349,7 @@ final class CsvImport
      */
     public static function preview(array $rows, array $mapping, array $options, array $llm = []): array
     {
-        $existingTags = array_map('strtolower', Database::fetchAll('SELECT asset_tag FROM assets'));
+        $existingTags = array_map('strtolower', array_column(Database::fetchAll('SELECT asset_tag FROM assets'), 'asset_tag'));
         $existingPersons = array_map(fn($p) => strtolower($p['full_name']), Database::fetchAll('SELECT full_name FROM persons'));
         $summary = ['to_create' => 0, 'duplicate_skip' => 0, 'persons_to_create' => 0,
                     'photos_to_download' => 0, 'issues' => 0];
@@ -508,7 +508,7 @@ final class CsvImport
                    'persons_created' => [], 'photos_downloaded' => 0, 'photos_failed' => 0,
                    'categories_created' => [], 'departments_created' => [], 'sites_created' => []];
 
-        $existingTags = array_flip(array_map('strtolower', Database::fetchAll('SELECT asset_tag FROM assets')));
+        $existingTags = array_flip(array_map('strtolower', array_column(Database::fetchAll('SELECT asset_tag FROM assets'), 'asset_tag')));
         $persons = [];
         foreach (Database::fetchAll('SELECT id, full_name FROM persons') as $p) {
             $persons[strtolower($p['full_name'])] = (int) $p['id'];
