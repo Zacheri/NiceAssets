@@ -83,4 +83,4 @@ See `AGENTS.md`. Quick loop:
 
 ## License
 
-MIT — see `LICENSE`.
+PUBLIC DOMAIN — see `LICENSE`.
