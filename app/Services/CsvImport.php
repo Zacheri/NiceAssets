@@ -17,6 +17,8 @@ final class CsvImport
 {
     public const MAX_FILE_MB = 10;
     public const PREVIEW_ROWS = 50;
+    /** Max distinct values per LLM prompt; keeps the output JSON under the model's token cap. */
+    public const LLM_BATCH_SIZE = 60;
 
     /** Legal mapping targets for the import wizard (select options). */
     public const TARGETS = ['asset_tag', 'purchase_date', 'person', 'category', 'photo_url', 'description', 'brand', 'serial_number', 'purchase_cost', 'purchase_cost_fallback', 'site', 'department', 'status', 'model_number', 'ignore'];
@@ -201,7 +203,9 @@ final class CsvImport
     }
 
     /**
-     * Optional LLM classification of distinct values. One prompt per field.
+     * Optional LLM classification of distinct values. One prompt per field
+     * per LLM_BATCH_SIZE values (chunked so the output JSON stays under the
+     * model's max_tokens cap); per-chunk results are merged.
      * $distinct: distinctValues() output. $enabled: the AI-assist toggle.
      * Never throws: any failure yields ai_unavailable=true with the
      * deterministic path still intact.
@@ -245,28 +249,34 @@ final class CsvImport
                 . 'You receive distinct values from the "' . $spec['column'] . '" column of a CSV export. '
                 . $spec['instruction'] . ' Respond with a JSON object only — no prose, no markdown — '
                 . 'mapping each input value to its classification.';
-            $user = json_encode(array_map(fn($v) => ['value' => $v, 'count' => $distinct[$keyOf[$field]][$v]], $spec['values']));
-            try {
-                $res = LlmClient::chat(
-                    [
-                        ['role' => 'system', 'content' => $system],
-                        ['role' => 'user', 'content' => $user],
-                    ],
-                    [],
-                    fn() => null,
-                    1,
-                    120
-                );
-                $text = is_array($res) ? (string) ($res['text'] ?? '') : (string) $res;
-                $out[$field] = self::parseClassification($text, $field, $spec['values']);
-                if ($out[$field] === []) {
+            $merged = [];
+            foreach (array_chunk($spec['values'], self::LLM_BATCH_SIZE) as $i => $chunk) {
+                $user = json_encode(array_map(fn($v) => ['value' => $v, 'count' => $distinct[$keyOf[$field]][$v]], $chunk));
+                try {
+                    $res = LlmClient::chat(
+                        [
+                            ['role' => 'system', 'content' => $system],
+                            ['role' => 'user', 'content' => $user],
+                        ],
+                        [],
+                        fn() => null,
+                        1,
+                        120
+                    );
+                    $text = is_array($res) ? (string) ($res['text'] ?? '') : (string) $res;
+                    $parsed = self::parseClassification($text, $field, $chunk);
+                    if ($parsed === []) {
+                        $out['ai_unavailable'] = true;
+                        $out['ai_error'] = $field . ': chunk ' . ($i + 1) . ' (starting "' . $chunk[0] . '"): model returned no usable classification.';
+                    } else {
+                        $merged = array_merge($merged, $parsed);
+                    }
+                } catch (\Throwable $e) {
                     $out['ai_unavailable'] = true;
-                    $out['ai_error'] = $field . ': model returned no usable classification.';
+                    $out['ai_error'] = $field . ': chunk ' . ($i + 1) . ' (starting "' . $chunk[0] . '"): ' . $e->getMessage();
                 }
-            } catch (\Throwable $e) {
-                $out['ai_unavailable'] = true;
-                $out['ai_error'] = $field . ': ' . $e->getMessage();
             }
+            $out[$field] = $merged;
         }
         return $out;
     }
@@ -346,6 +356,7 @@ final class CsvImport
         $issues = [];
         $previewRows = [];
         $personNames = [];
+        $photoUrls = [];
         foreach ($rows as $i => $row) {
             $c = self::clean($row, $mapping);
             $line = $i + 2; // 1-based + header
@@ -379,8 +390,18 @@ final class CsvImport
                     }
                 }
             }
-            if (!empty($options['photos']) && $c['photo_url'] !== null) {
-                $summary['photos_to_download']++;
+            if ($c['department'] !== null && ($llm['departments'][$c['department']] ?? null) === 'status-note') {
+                $rowIssues[] = 'department is a status note (will be ignored)';
+            }
+            $brandCanonical = $c['brand'] !== null ? ($llm['brands'][$c['brand']] ?? null) : null;
+            if ($brandCanonical !== null && $brandCanonical !== $c['brand']) {
+                $rowIssues[] = 'brand will be imported as "' . $brandCanonical . '"';
+            }
+            if (!empty($options['photos']) && $c['photo_url'] !== null
+                && $c['asset_tag'] !== ''
+                && !in_array(strtolower($c['asset_tag']), $existingTags, true)
+                && !in_array('status_unknown', $c['issues'], true)) {
+                $photoUrls[$c['photo_url']] = true;
             }
             if ($rowIssues !== []) {
                 $summary['issues']++;
@@ -393,6 +414,7 @@ final class CsvImport
                 $previewRows[] = ['line' => $line, 'row' => $c, 'notes' => $rowIssues];
             }
         }
+        $summary['photos_to_download'] = count($photoUrls);
         return ['summary' => $summary, 'issues' => $issues, 'rows' => $previewRows, 'total' => count($rows)];
     }
 
@@ -509,6 +531,12 @@ final class CsvImport
             $photoUrls = [];
             foreach ($rows as $row) {
                 $c = self::clean($row, $mapping);
+                // Only rows that will actually be imported (same gates as the
+                // row loop below): non-empty tag, not a DB duplicate, known status.
+                if ($c['asset_tag'] === '' || isset($existingTags[strtolower($c['asset_tag'])])
+                    || in_array('status_unknown', $c['issues'], true)) {
+                    continue;
+                }
                 if ($c['photo_url'] !== null) {
                     $photoUrls[$c['photo_url']] = true;
                 }
@@ -545,6 +573,9 @@ final class CsvImport
                     }
                     $c['status'] = 'available'; // empty status
                 }
+                if ($c['department'] !== null && ($llm['departments'][$c['department']] ?? null) === 'status-note') {
+                    $c['department'] = null; // classified status-note: not a real department
+                }
                 $c['category_id'] = $c['category'] !== null ? self::matchOrCreate('categories', $c['category'], $cats, $report['categories_created']) : null;
                 $c['department_id'] = $c['department'] !== null ? self::matchOrCreate('departments', $c['department'], $depts, $report['departments_created']) : null;
                 $c['site_id'] = $c['site'] !== null ? self::matchOrCreate('sites', $c['site'], $sites, $report['sites_created']) : null;
@@ -563,6 +594,10 @@ final class CsvImport
                         $report['persons_created'][] = $c['person'];
                         $c['person'] = null;
                     }
+                }
+
+                if ($c['brand'] !== null) {
+                    $c['brand'] = $llm['brands'][$c['brand']] ?? $c['brand'];
                 }
 
                 $id = Asset::importRow([
