@@ -44,7 +44,11 @@ final class ImportController
             $this->uploadError($e->getMessage());
             return;
         }
-        $mapping = $this->mappingFromPost($parsed['header']);
+        // First pass (upload form) posts no mapping selects: start from the
+        // known AssetTiger defaults. Re-analyze posts the edited selects.
+        $mapping = Request::post('mapping') === null
+            ? CsvImport::defaultMapping($parsed['header'])
+            : $this->mappingFromPost($parsed['header']);
         $options = $this->optionsFromPost();
         $distinct = CsvImport::distinctValues($parsed['rows'], $mapping);
         $llm = CsvImport::llmClassify($distinct, !empty($options['ai_assist']));
