@@ -66,6 +66,10 @@ There is **no framework**. Dependencies are only:
 - **Photos** live in the `photos` table (gallery) and are linked via
   `asset_photos` (junction). Deleting a photo unlinks it everywhere and removes
   the file. The first position (or `is_thumbnail`) is the card thumbnail.
+  `photos.kind` is `asset` or `portrait` (v1.2): portraits link to
+  `persons.portrait_photo_id` (ON DELETE SET NULL); the company logo is the
+  `brand.logo_photo_id` setting. All three use the same picker modal
+  (`templates/partials/photo_picker_modal.php` + `public/theme/js/photo-picker.js`).
 
 ## Concurrency & resilience
 
@@ -144,3 +148,74 @@ Local verification:
 - `app/Controllers/AssistantController.php` — `/assistant*` routes. Session: `llm_history` (last 12 messages) and `assistant_plan` (pending ops). Audit: `assistant.query` (every prompt) and `assistant.execute` (every confirm).
 - Two-phase safety: a model can only *propose*; the UI renders a confirm card; `POST /assistant/confirm` executes the stored plan through `Tools::execute(..., executeMode: true)` and audits each result.
 - Settings keys (all in `settings`, no migrations): `llm.models_dir`, `llm.host`, `llm.port`, `llm.context`, `llm.external`, `llm.selected_model`. Model management (upload, select, start/stop, endpoint config) lives on the Assistant tab (admin role); the `llama-server` binary ships in the image.
+
+## CSV import (Admin → Import)
+
+A three-step wizard (upload → preview → report) for AssetTiger-style CSV
+exports. All logic is in `app/Services/CsvImport.php` (static, no HTTP
+knowledge); `app/Controllers/ImportController.php` is thin. Routes:
+`GET /admin/import`, `POST /admin/import/analyze`, `POST /admin/import/run`
+(admin only).
+
+Pipeline:
+
+1. `parse()` — fgetcsv, returns `header` + `rows`.
+2. Mapping — the first analyze uses `defaultMapping()` (known AssetTiger
+   column names); the preview step renders a `<select>` per column and the
+   re-analyze/import POSTs the edited mapping. Unknown targets → `ignore`.
+3. `clean()` — deterministic per-row cleaning: garbage serials (`?`, `NA`,
+   `N/A`, `Article #:`, `Product #`) → null; `N in stock` model numbers →
+   null; status notes found in the department column (`IN STOCK`,
+   `DISPOSED/DONATED/SOLD`, `**EMPLOYEE NEVER RETURNED**`) → status.
+4. `preview()` — per-row issues + summary counts (to create, duplicate
+   tags, persons to create, distinct photos to download, rows with issues).
+5. `import()` — one transaction: duplicate tags (vs the pre-loaded
+   `assets.asset_tag` snapshot) are skipped; persons/categories/departments/
+   sites are matched-or-created by name; rows insert via `Asset::importRow()`.
+
+Optional LLM assist (`llmClassify`, off by default): classifies **distinct
+values only** (person vs non-person, brand canonical, department vs
+status-note). Values are chunked ≤ 60 per prompt (the LLM client has a fixed
+1024-token output cap), each chunk's response is validated against its own
+value list by the pure, never-throwing `parseClassification()`. A failing
+chunk sets `ai_unavailable` and the rest of the import proceeds without it —
+the import never depends on the model. The preview renders per-value
+override selects so a human can correct classifications before import.
+
+Optional photo download (off by default): distinct photo URLs among
+importable rows are fetched with cURL into `storage/uploads` **before** the
+transaction and linked via `Asset::linkPhoto()`; a per-URL failure is
+tolerated (the row still imports, the photo is skipped and reported).
+
+Uploads are stored as `storage/imports/<hex>.csv` (10 MB cap, `.csv` only)
+and deleted after a successful import. Re-imports are idempotent: every
+existing tag is `duplicate_skip`.
+
+## Theming
+
+- `app/Themes.php` — four presets (`default`, `forest`, `violet`, `dark`)
+  as CSS custom-property maps; `OVERRIDABLE` is the small set of tokens a
+  user may customize (`--primary`, `--accent`, `--bg`, `--sidebar`).
+- `users.theme` (v1.3) — JSON `{"preset":"…","colors":{…}}`, or `''` meaning
+  *follow the company default*. `POST /account/theme` (any logged-in user).
+- Settings: `theme.default_preset` (company default) and `theme.available`
+  (which presets the admin offers). Un-availing a preset reverts its users
+  to the default.
+- Rendering: the layout (and the login page) inject an inline `<style>`
+  block after `app.css` with the resolved tokens — no per-user CSS files,
+  no extra requests.
+
+## Notifications
+
+Alerts are computed, not stored (`AlertEngine::dashboard()`). The layout
+renders a bell on **every** page with the important-alert count; clicking it
+opens a floating panel listing all alerts. The 15-minute cron sweep
+(`bin/alert_sweep.php`) emails new important alerts, deduped once per day
+per item via `alert_log`.
+
+## People directory (Admin → People)
+
+`/admin/persons` (admin only): card grid with portrait, status badge, and
+assigned-asset count; a detail page lists the person's assets; a toggle
+deactivates a person (blocks new checkouts). Persons are the check-out
+target (v1.1) — they are not login accounts.

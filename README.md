@@ -3,11 +3,15 @@
 A local-network inventory management web application in the spirit of
 AssetTiger: asset lifecycle tracking (available → checked out → in repair /
 broken / lost / disposed / sold / donated), 5-year linear depreciation,
-warranty / low-stock / overdue alerts, PDF & Excel reports,
-AssetTiger-compatible QR/barcode labels, role-based access (Admin /
+warranty / low-stock / overdue alerts (bell on every page), PDF & Excel
+reports, AssetTiger-compatible QR/barcode labels, role-based access (Admin /
 Department Manager / Viewer), a full audit trail, daily backups with
-one-click restore — and a local-LLM AI assistant that can read the inventory
-and (with your confirmation) perform actions.
+one-click restore, a people directory with portraits, asset photos and a
+company logo, customizable themes (presets + per-user colors), and an admin
+CSV importer for AssetTiger exports (deterministic cleaning, optional
+LLM-assisted value classification, optional photo download) — plus a
+local-LLM AI assistant that can read the inventory and (with your
+confirmation) perform actions.
 
 Everything runs in Docker. No model is bundled: you upload a GGUF model of
 your choice from the Assistant tab.

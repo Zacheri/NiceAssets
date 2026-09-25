@@ -83,8 +83,12 @@ same endpoint.
 
 | Volume | Container path | Contents |
 |---|---|---|
-| `naims_storage` | `/var/www/naims/storage` | uploads, backups, logs, reports, labels, sessions, models, run |
+| `naims_storage` | `/var/www/naims/storage` | uploads, backups, logs, reports, labels, sessions, models, run, imports |
 | `naims_pgdata` | `/var/lib/postgresql/data` | Postgres data |
+
+`storage/imports` holds CSV import uploads; files are deleted automatically
+after a successful import (a failed or abandoned import leaves the file
+behind — safe to remove by hand).
 
 Wipe everything: `docker compose down -v`.
 
