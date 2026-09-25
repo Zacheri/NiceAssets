@@ -1,14 +1,13 @@
 # Nice Assets
 
-A local-network inventory management web application in the spirit of
-AssetTiger: asset lifecycle tracking (available → checked out → in repair /
+A local-network inventory management web application with asset lifecycle tracking (available → checked out → in repair /
 broken / lost / disposed / sold / donated), 5-year linear depreciation,
 warranty / low-stock / overdue alerts (bell on every page), PDF & Excel
-reports, AssetTiger-compatible QR/barcode labels, role-based access (Admin /
+reports, QR/barcode labels, role-based access (Admin /
 Department Manager / Viewer), a full audit trail, daily backups with
 one-click restore, a people directory with portraits, asset photos and a
 company logo, customizable themes (presets + per-user colors), and an admin
-CSV importer for AssetTiger exports (deterministic cleaning, optional
+CSV importer for foreign-exported asset data (deterministic cleaning, optional
 LLM-assisted value classification, optional photo download) — plus a
 local-LLM AI assistant that can read the inventory and (with your
 confirmation) perform actions.
