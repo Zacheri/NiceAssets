@@ -86,4 +86,4 @@ See `AGENTS.md`. Quick loop:
 
 ## License
 
-PUBLIC DOMAIN — see `LICENSE`.
+NONE - PUBLIC DOMAIN
